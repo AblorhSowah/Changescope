@@ -4,6 +4,7 @@ import type {
   AnalyzeInput,
   FileKey,
   ImportBinding,
+  ImportKind,
   ReferenceResult,
   ReferenceTarget,
   ResolvedTarget,
@@ -37,6 +38,7 @@ interface Acc {
   statements: number;
   lines: Set<number>;
   specifiers: string[];
+  kinds: ImportKind[];
   bindings: Map<string, ImportBinding>;
 }
 
@@ -103,7 +105,7 @@ export async function analyzeReferences(i: AnalyzeInput): Promise<ReferenceResul
         if (t.key === i.path || hasSegment(t.key, 'node_modules') || i.isExcluded(t.key)) continue;
         let a = acc.get(t.key);
         if (!a) {
-          a = { statements: 0, lines: new Set(), specifiers: [], bindings: new Map() };
+          a = { statements: 0, lines: new Set(), specifiers: [], kinds: [], bindings: new Map() };
           acc.set(t.key, a);
         }
         if (!countedForStatement.has(t.key)) {
@@ -111,6 +113,7 @@ export async function analyzeReferences(i: AnalyzeInput): Promise<ReferenceResul
           a.statements += 1;
           a.lines.add(stmt.line);
           if (!a.specifiers.includes(stmt.specifier)) a.specifiers.push(stmt.specifier);
+          if (!a.kinds.includes(stmt.kind)) a.kinds.push(stmt.kind);
         }
         for (const b of t.bindings) if (!a.bindings.has(b.local)) a.bindings.set(b.local, b);
       }
@@ -126,6 +129,7 @@ export async function analyzeReferences(i: AnalyzeInput): Promise<ReferenceResul
         usages,
         lines: [...a.lines].sort((x, y) => x - y),
         specifiers: a.specifiers,
+        kinds: a.kinds,
       });
     }
     targets.sort((x, y) => y.count - x.count || (x.key < y.key ? -1 : x.key > y.key ? 1 : 0));

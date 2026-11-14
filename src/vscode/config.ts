@@ -22,6 +22,19 @@ export function readConfig(): FileShakeConfig {
     detectExternalEdits: c.get('detectExternalEdits'),
     maxFileSizeKb: c.get('maxFileSizeKb'),
     showStatusBar: c.get('showStatusBar'),
+    viewMode: c.get('viewMode'),
+    animationIntensity: c.get('animationIntensity'),
+    historyPersist: c.get('history.persist'),
+    historyMaxEvents: c.get('history.maxEvents'),
+    historyRetentionDays: c.get('history.retentionDays'),
+    gitEnabled: c.get('git.enabled'),
+    dependencyIndex: c.get('dependencies.index'),
+    dependencyMaxFiles: c.get('dependencies.maxFiles'),
+    collisionsNotify: c.get('collisions.notify'),
+    sensitiveGlobs: c.get('sensitiveGlobs'),
+    aiMode: c.get('ai.mode'),
+    aiProvider: c.get('ai.provider'),
+    agentSignals: c.get('experimental.agentSignals'),
   };
   return sanitizeConfig(raw);
 }
@@ -32,22 +45,28 @@ export function onDidChangeConfig(cb: () => void): vscode.Disposable {
   });
 }
 
-/** Flips `fileShake.enable` in the scope where it is currently defined (default: user settings). */
-export async function toggleEnabled(): Promise<void> {
+/** Writes `fileShake.<name>` in the scope where it is currently defined (default: user settings). Resolves false when no scope accepted it. */
+export async function updateSetting(name: string, value: unknown): Promise<boolean> {
   const folder = vscode.workspace.workspaceFolders?.[0];
   const c = vscode.workspace.getConfiguration(SECTION, folder?.uri);
-  const next = !(c.get<boolean>('enable') ?? true);
-  const info = c.inspect<boolean>('enable');
+  const info = c.inspect<unknown>(name);
   const attempts: vscode.ConfigurationTarget[] = [];
   if (info?.workspaceFolderValue !== undefined && folder) attempts.push(vscode.ConfigurationTarget.WorkspaceFolder);
   else if (info?.workspaceValue !== undefined) attempts.push(vscode.ConfigurationTarget.Workspace);
   attempts.push(vscode.ConfigurationTarget.Global);
   for (const target of attempts) {
     try {
-      await c.update('enable', next, target);
-      return;
+      await c.update(name, value, target);
+      return true;
     } catch {
       // try the next, broader scope
     }
   }
+  return false;
+}
+
+/** Flips `fileShake.enable` in the scope where it is currently defined (default: user settings). */
+export async function toggleEnabled(): Promise<void> {
+  const c = vscode.workspace.getConfiguration(SECTION, vscode.workspace.workspaceFolders?.[0]?.uri);
+  await updateSetting('enable', !(c.get<boolean>('enable') ?? true));
 }

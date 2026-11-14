@@ -5,6 +5,7 @@ import type { FileNode, FolderNode, TreeNode } from '../../src/core/tree';
 import { viewRow } from '../support/builders';
 import { must } from '../support/fixtures';
 import type { ViewRow } from '../support/types';
+import { scaled } from '../support/perfGuard';
 
 const folder = (n: TreeNode | undefined): FolderNode => {
   const node = must(n, 'node');
@@ -198,7 +199,7 @@ describe('buildTree', () => {
     walk(tree);
     assert.equal(seen.length, 500);
     assert.equal(new Set(seen).size, 500);
-    assert.ok(elapsed < 200, `buildTree took ${elapsed.toFixed(1)}ms`);
+    assert.ok(elapsed < scaled(200), `buildTree took ${elapsed.toFixed(1)}ms`);
   });
 });
 

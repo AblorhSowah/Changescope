@@ -127,7 +127,7 @@ suite('Activation and registration (all launch variants)', () => {
       assert.ok(k in dump, `debug info lacks ${k}`);
     }
     assert.equal(dump['enabled'], true);
-    assert.equal(dump['extensionVersion'], '0.2.0');
+    assert.equal(dump['extensionVersion'], '0.3.0');
     assert.ok(typeof dump['vscodeVersion'] === 'string' && (dump['vscodeVersion'] as string).length > 0);
     const rows = dump['rows'] as Array<{ id: string }>;
     assert.ok(rows.some((r) => r.id === normalizePath(join(envPath('FS_TEST_OUTSIDE'), 'o1.ts'))), 'the dump lists the file being edited');

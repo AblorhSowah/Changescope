@@ -14,6 +14,7 @@ import { parseHostMessage } from '../../src/core/protocol';
 import { snapshotOf, trackedFile, viewRow } from '../support/builders';
 import { K } from '../../src/core/constants';
 import type { ImportBinding } from '../support/types';
+import { scaled } from '../support/perfGuard';
 
 /** Best (minimum) wall time of `n` runs: robust against one-off scheduler noise. */
 function bestOf(n: number, fn: () => void): number {
@@ -83,7 +84,7 @@ describe('performance: reference parsing (DESIGN 8.7)', () => {
       const stmts = parseImports('ts', text);
       countUsages(scan.masked, bindings, new Set<number>(stmts.map((s) => s.line)));
     });
-    assert.ok(ms <= 400, `took ${ms.toFixed(1)} ms`);
+    assert.ok(ms <= scaled(400), `took ${ms.toFixed(1)} ms`);
   });
 
   it('the file really contains the expected imports (the benchmark does real work)', () => {
@@ -102,7 +103,7 @@ describe('performance: reference parsing (DESIGN 8.7)', () => {
     const t0 = performance.now();
     const { result } = await run(files, '/ws/main.ts', text);
     const ms = performance.now() - t0;
-    assert.ok(ms <= 1000, `analyzeReferences took ${ms.toFixed(1)} ms`);
+    assert.ok(ms <= scaled(1000), `analyzeReferences took ${ms.toFixed(1)} ms`);
     assert.equal(result.targets.length, K.MAX_REFS_PER_SOURCE);
     assert.equal(result.truncated, true);
   });
@@ -117,7 +118,7 @@ describe('performance: reference parsing (DESIGN 8.7)', () => {
         scanCode(lang, src);
         parseImports(lang, src);
       });
-      assert.ok(ms <= 400, `${lang}: ${ms.toFixed(1)} ms`);
+      assert.ok(ms <= scaled(400), `${lang}: ${ms.toFixed(1)} ms`);
     }
   });
 });
@@ -132,7 +133,7 @@ describe('performance: pathological inputs (500 KB, hard timeout, child process)
       maxBuffer: 64 * 1024 * 1024,
     });
     const out = res.stdout.split('\n').filter((l) => l.startsWith('{'));
-    const rows = out.map((l) => JSON.parse(l) as { lang: string; pattern: string; ms: number; ok: boolean; error: string });
+    const rows = out.map((l) => JSON.parse(l) as { lang: string; pattern: string; ms: number; cpuMs: number; ok: boolean; error: string });
     const expectedRuns = 16 * 32;
     if (res.error || res.status !== 0) {
       const last = rows[rows.length - 1];
@@ -144,8 +145,15 @@ describe('performance: pathological inputs (500 KB, hard timeout, child process)
     assert.equal(rows.length, expectedRuns);
     const failed = rows.filter((r) => !r.ok);
     assert.deepEqual(failed.map((r) => `${r.lang}/${r.pattern}: ${r.error}`), [], 'no combination may throw');
-    const slow = rows.filter((r) => r.ms > 1000);
-    assert.deepEqual(slow.map((r) => `${r.lang}/${r.pattern}: ${r.ms} ms`), [], 'budget is 1000 ms per combination');
+    // The budget is CPU time (user + system, measured in the child with process.cpuUsage), not wall-clock time:
+    // node --test runs the other test files in parallel, and on a busy machine the same work takes 10x longer on
+    // the wall clock without being any slower (a combination that needs 150 ms of CPU showed 2.7 s of wall time under
+    // load average 20+). An idle machine measures at most about 540 ms of CPU (css/css-import-open), median 18 ms.
+    // A catastrophic regex burns CPU, so it still fails this guard; a hang is caught by the hard timeouts above.
+    const slow = rows.filter((r) => r.cpuMs > 1000);
+    assert.deepEqual(slow.map((r) => `${r.lang}/${r.pattern}: ${r.cpuMs} ms of CPU (${r.ms} ms wall)`), [], 'budget is 1000 ms of CPU per combination');
+    const stalled = rows.filter((r) => r.ms > 30_000);
+    assert.deepEqual(stalled.map((r) => `${r.lang}/${r.pattern}: ${r.ms} ms wall`), [], 'no combination may stall for 30 s even on a busy machine');
   });
 });
 
@@ -161,7 +169,7 @@ describe('performance: tracker and view model', () => {
       }
       tracker.snapshot();
     });
-    assert.ok(ms <= 20, `200 edits took ${ms.toFixed(2)} ms`);
+    assert.ok(ms <= scaled(20), `200 edits took ${ms.toFixed(2)} ms`);
   });
 
   it('200 edits spread over 40 files, with a snapshot after each, stay within 100 ms', () => {
@@ -174,7 +182,7 @@ describe('performance: tracker and view model', () => {
         tracker.snapshot();
       }
     });
-    assert.ok(ms <= 100, `took ${ms.toFixed(2)} ms`);
+    assert.ok(ms <= scaled(100), `took ${ms.toFixed(2)} ms`);
   });
 
   it('10,000 events on one file do not slow later calls (memory/time bounded by MAX_EVENTS_PER_FILE)', () => {
@@ -184,7 +192,7 @@ describe('performance: tracker and view model', () => {
     const ms = bestOf(5, () => {
       for (let i = 0; i < 200; i++) tracker.get('/ws/a.ts');
     });
-    assert.ok(ms <= 50, `200 gets after 10k events took ${ms.toFixed(2)} ms`);
+    assert.ok(ms <= scaled(50), `200 gets after 10k events took ${ms.toFixed(2)} ms`);
   });
 
   it('a 40-file model refresh (rows + tree + decorations) is cheap enough for a 200 ms tick (<= 20 ms)', () => {
@@ -200,7 +208,7 @@ describe('performance: tracker and view model', () => {
       buildTree(rows);
       buildDecorations(rows, { showWhenIdle: false, decorateFolders: true });
     });
-    assert.ok(ms <= 20, `refresh took ${ms.toFixed(2)} ms`);
+    assert.ok(ms <= scaled(20), `refresh took ${ms.toFixed(2)} ms`);
   });
 
   it('parseHostMessage validates a 500-row snapshot quickly (<= 30 ms)', () => {
@@ -209,6 +217,6 @@ describe('performance: tracker and view model', () => {
     const ms = bestOf(5, () => {
       assert.ok(parseHostMessage(msg));
     });
-    assert.ok(ms <= 30, `took ${ms.toFixed(2)} ms`);
+    assert.ok(ms <= scaled(30), `took ${ms.toFixed(2)} ms`);
   });
 });

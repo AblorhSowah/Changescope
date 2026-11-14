@@ -66,6 +66,14 @@ if (tests) {
       format: 'iife',
       target: 'es2022',
     },
+    {
+      ...common,
+      entryPoints: [join(root, 'src', 'dashboard', 'main.ts')],
+      outfile: join(root, 'dist', 'dashboard.js'),
+      platform: 'browser',
+      format: 'iife',
+      target: 'es2022',
+    },
   );
 }
 

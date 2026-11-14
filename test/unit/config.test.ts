@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_CONFIG, sanitizeConfig, toTrackerOptions } from '../../src/core/config';
+import { DEFAULT_CONFIG, DEFAULT_SENSITIVE_GLOBS, PROVIDER_ID_PATTERN, sanitizeConfig, toTrackerOptions } from '../../src/core/config';
 import type { FileShakeConfig } from '../../src/core/config';
 import { DEFAULT_TRACKER_OPTIONS } from '../../src/core/activityTracker';
 import { K } from '../../src/core/constants';
@@ -25,6 +25,9 @@ const EXPECTED_DEFAULT_GLOBS = [
   '**/pnpm-lock.yaml',
 ];
 
+/** DESIGN-0.3.0 section 12 (and the Host Builder's field names, recorded in its Deviations). */
+const EXPECTED_SENSITIVE_GLOBS = ['**/.env*', '**/*.pem', '**/*.key', '**/*.pfx', '**/*.p12', '**/id_rsa*', '**/id_ed25519*', '**/secrets/**', '**/.npmrc', '**/.netrc'];
+
 const KEYS: Array<keyof FileShakeConfig> = [
   'enable',
   'enableAnimation',
@@ -41,6 +44,20 @@ const KEYS: Array<keyof FileShakeConfig> = [
   'detectExternalEdits',
   'maxFileSizeKb',
   'showStatusBar',
+  // 0.3.0
+  'viewMode',
+  'animationIntensity',
+  'historyPersist',
+  'historyMaxEvents',
+  'historyRetentionDays',
+  'gitEnabled',
+  'dependencyIndex',
+  'dependencyMaxFiles',
+  'collisionsNotify',
+  'sensitiveGlobs',
+  'aiMode',
+  'aiProvider',
+  'agentSignals',
 ];
 
 describe('DEFAULT_CONFIG', () => {
@@ -60,6 +77,23 @@ describe('DEFAULT_CONFIG', () => {
     assert.equal(DEFAULT_CONFIG.editedColor, '');
     assert.equal(DEFAULT_CONFIG.referencedColor, '');
     assert.deepEqual([...DEFAULT_CONFIG.excludeGlobs], EXPECTED_DEFAULT_GLOBS);
+  });
+
+  it('the 0.3.0 defaults are the ones of DESIGN-0.3.0 section 12', () => {
+    assert.equal(DEFAULT_CONFIG.viewMode, 'live');
+    assert.equal(DEFAULT_CONFIG.animationIntensity, 1);
+    assert.equal(DEFAULT_CONFIG.historyPersist, true);
+    assert.equal(DEFAULT_CONFIG.historyMaxEvents, 1000);
+    assert.equal(DEFAULT_CONFIG.historyRetentionDays, 14);
+    assert.equal(DEFAULT_CONFIG.gitEnabled, true);
+    assert.equal(DEFAULT_CONFIG.dependencyIndex, 'onDemand');
+    assert.equal(DEFAULT_CONFIG.dependencyMaxFiles, 5000);
+    assert.equal(DEFAULT_CONFIG.collisionsNotify, true);
+    assert.equal(DEFAULT_CONFIG.aiMode, 'local', 'nothing leaves the machine by default');
+    assert.equal(DEFAULT_CONFIG.aiProvider, '');
+    assert.equal(DEFAULT_CONFIG.agentSignals, false, 'the experimental adapter is opt-in');
+    assert.deepEqual([...DEFAULT_CONFIG.sensitiveGlobs], EXPECTED_SENSITIVE_GLOBS);
+    assert.deepEqual([...DEFAULT_SENSITIVE_GLOBS], EXPECTED_SENSITIVE_GLOBS);
   });
 
   it('has exactly the documented keys', () => {
@@ -95,8 +129,22 @@ describe('sanitizeConfig', () => {
       detectExternalEdits: false,
       maxFileSizeKb: 1024,
       showStatusBar: false,
+      viewMode: 'impact',
+      animationIntensity: 1.75,
+      historyPersist: false,
+      historyMaxEvents: 2500,
+      historyRetentionDays: 30,
+      gitEnabled: false,
+      dependencyIndex: 'off',
+      dependencyMaxFiles: 12000,
+      collisionsNotify: false,
+      sensitiveGlobs: ['**/*.secret', 'private/**'],
+      aiMode: 'assisted',
+      aiProvider: 'acme.llm-1',
+      agentSignals: true,
     };
     assert.deepEqual(sanitizeConfig(raw), raw);
+    assert.deepEqual(Object.keys(raw).sort(), [...KEYS].sort(), 'the sample covers every key');
   });
 
   describe('numeric ranges clamp', () => {
@@ -106,6 +154,10 @@ describe('sanitizeConfig', () => {
       ['maxFiles', 5, 200, 40, true],
       ['sensitivity', 0.25, 4, 1, false],
       ['maxFileSizeKb', 16, 4096, 512, true],
+      ['animationIntensity', 0.25, 2, 1, false],
+      ['historyMaxEvents', 100, 5000, 1000, true],
+      ['historyRetentionDays', 1, 90, 14, true],
+      ['dependencyMaxFiles', 200, 20000, 5000, true],
     ];
     for (const [key, min, max, def, integer] of ranges) {
       it(`${key}: [${min}, ${max}] default ${def}`, () => {
@@ -155,6 +207,10 @@ describe('sanitizeConfig', () => {
       ['decorateFolders', true],
       ['detectExternalEdits', true],
       ['showStatusBar', true],
+      ['historyPersist', true],
+      ['gitEnabled', true],
+      ['collisionsNotify', true],
+      ['agentSignals', false],
     ];
     for (const [key, def] of boolKeys) {
       it(`${key}: non-boolean falls back to default ${def}`, () => {
@@ -195,6 +251,63 @@ describe('sanitizeConfig', () => {
       const c = sanitizeConfig({ excludeGlobs: input });
       input.push('y');
       assert.deepEqual(c.excludeGlobs, ['x']);
+    });
+  });
+
+  describe('enums fall back to the default for anything that is not exactly an allowed value', () => {
+    const enums: Array<[keyof FileShakeConfig, string[], string]> = [
+      ['viewMode', ['live', 'compact', 'impact'], 'live'],
+      ['dependencyIndex', ['onDemand', 'off'], 'onDemand'],
+      ['aiMode', ['local', 'assisted'], 'local'],
+    ];
+    for (const [key, allowed, def] of enums) {
+      it(`${key}: ${allowed.join(' | ')}, default ${def}`, () => {
+        for (const ok of allowed) assert.equal(sanitizeConfig({ [key]: ok })[key], ok);
+        for (const bad of ['', ' ', 'LIVE', 'Live', 'live ', 'turbo', 'true', 1, 0, true, null, undefined, {}, [], [allowed[0]], Number.NaN]) {
+          assert.equal(sanitizeConfig({ [key]: bad })[key], def, `${key}=${JSON.stringify(bad)}`);
+        }
+      });
+    }
+  });
+
+  describe('aiProvider: a short opaque id, never a path or free text', () => {
+    const ok = ['a', 'acme', 'acme.llm', 'acme.llm-1_x', 'A1', '0abc', 'a'.repeat(64)];
+    const bad = ['', ' acme', 'acme ', 'a b', '.acme', '-acme', '_acme', 'a'.repeat(65), '../etc/passwd', 'a/b', 'a\\b', 'a\nb', 'acme\u0000', 'ünï', '日本語', 5, null, undefined, {}, [], ['acme'], true];
+    for (const v of ok) it(`accepts ${JSON.stringify(v)}`, () => assert.equal(sanitizeConfig({ aiProvider: v }).aiProvider, v));
+    for (const v of bad) it(`rejects ${JSON.stringify(v)} -> ''`, () => assert.equal(sanitizeConfig({ aiProvider: v }).aiProvider, ''));
+    it('the exported pattern is the same rule', () => {
+      for (const v of ok) assert.ok(PROVIDER_ID_PATTERN.test(v), v);
+      for (const v of bad) if (typeof v === 'string') assert.ok(!PROVIDER_ID_PATTERN.test(v), JSON.stringify(v));
+    });
+  });
+
+  describe('sensitiveGlobs', () => {
+    it('non-array falls back to the default list; an empty array is the user\'s choice and stays empty', () => {
+      for (const bad of ['**/.env*', 5, null, undefined, {}, true]) assert.deepEqual([...sanitizeConfig({ sensitiveGlobs: bad }).sensitiveGlobs], EXPECTED_SENSITIVE_GLOBS);
+      assert.deepEqual(sanitizeConfig({ sensitiveGlobs: [] }).sensitiveGlobs, []);
+    });
+
+    it('arrays keep only their string entries, in order', () => {
+      assert.deepEqual(sanitizeConfig({ sensitiveGlobs: ['a', 1, null, 'b', undefined, {}, ['c'], 'd'] }).sensitiveGlobs, ['a', 'b', 'd']);
+    });
+
+    it('the returned array is a copy: mutating it never corrupts the defaults, and the caller\'s array is not aliased', () => {
+      const c = sanitizeConfig({});
+      c.sensitiveGlobs.push('**/mutated');
+      assert.ok(!DEFAULT_CONFIG.sensitiveGlobs.includes('**/mutated'));
+      assert.ok(!DEFAULT_SENSITIVE_GLOBS.includes('**/mutated'));
+      assert.ok(!sanitizeConfig({}).sensitiveGlobs.includes('**/mutated'));
+      const input = ['x'];
+      const d = sanitizeConfig({ sensitiveGlobs: input });
+      input.push('y');
+      assert.deepEqual(d.sensitiveGlobs, ['x']);
+    });
+
+    it('is independent of excludeGlobs (the two lists never share an array)', () => {
+      const c = sanitizeConfig({});
+      assert.notEqual(c.sensitiveGlobs, c.excludeGlobs);
+      c.excludeGlobs.length = 0;
+      assert.equal(c.sensitiveGlobs.length, EXPECTED_SENSITIVE_GLOBS.length);
     });
   });
 
@@ -290,6 +403,17 @@ describe('sanitizeConfig', () => {
       assert.ok(Array.isArray(c.excludeGlobs) && c.excludeGlobs.every((g) => typeof g === 'string'));
       assert.match(c.editedColor, /^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$/);
       assert.match(c.referencedColor, /^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}))?$/);
+      // 0.3.0
+      for (const b of [c.historyPersist, c.gitEnabled, c.collisionsNotify, c.agentSignals]) assert.equal(typeof b, 'boolean');
+      assert.ok(['live', 'compact', 'impact'].includes(c.viewMode));
+      assert.ok(['onDemand', 'off'].includes(c.dependencyIndex));
+      assert.ok(['local', 'assisted'].includes(c.aiMode));
+      assert.ok(Number.isFinite(c.animationIntensity) && c.animationIntensity >= 0.25 && c.animationIntensity <= 2);
+      assert.ok(Number.isInteger(c.historyMaxEvents) && c.historyMaxEvents >= 100 && c.historyMaxEvents <= 5000);
+      assert.ok(Number.isInteger(c.historyRetentionDays) && c.historyRetentionDays >= 1 && c.historyRetentionDays <= 90);
+      assert.ok(Number.isInteger(c.dependencyMaxFiles) && c.dependencyMaxFiles >= 200 && c.dependencyMaxFiles <= 20000);
+      assert.ok(Array.isArray(c.sensitiveGlobs) && c.sensitiveGlobs.every((g) => typeof g === 'string'));
+      assert.match(c.aiProvider, /^([A-Za-z0-9][A-Za-z0-9._-]{0,63})?$/);
     }
   });
 });

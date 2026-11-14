@@ -1,4 +1,6 @@
 node_modules/
+# the tests copy fixture trees that deliberately contain a node_modules folder
+!test/fixtures/**/node_modules/
 dist/
 out/
 .vscode-test/

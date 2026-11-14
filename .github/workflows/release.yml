@@ -1,0 +1,30 @@
+name: Release
+
+# Builds the .vsix for a version tag and keeps it as a workflow artifact.
+# It does not publish anywhere: publishing needs a Marketplace publisher and token, which are the owner's to add.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: The tag must match package.json
+        run: node -e "const v=require('./package.json').version; if (process.env.GITHUB_REF_NAME !== 'v'+v) { console.error('tag '+process.env.GITHUB_REF_NAME+' does not match package.json version '+v); process.exit(1); }"
+      - run: npm run build
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: file-shake-vsix
+          path: '*.vsix'
+          if-no-files-found: error

@@ -52,6 +52,7 @@ const langs: LanguageKey[] = ['ts', 'js', 'python', 'go', 'java', 'kotlin', 'c',
 for (const lang of langs) {
   for (const p of patterns) {
     const t0 = performance.now();
+    const c0 = process.cpuUsage();
     let ok = true;
     let error = '';
     try {
@@ -65,6 +66,10 @@ for (const lang of langs) {
       error = String(e);
     }
     const ms = performance.now() - t0;
-    process.stdout.write(`${JSON.stringify({ lang, pattern: p.name, ms: Math.round(ms), ok, error })}\n`);
+    // CPU time of this combination (user + system, in ms). Wall-clock time inflates when the machine is busy
+    // (node --test runs the other test files in parallel); CPU time does not, so the parent test guards on it.
+    const c = process.cpuUsage(c0);
+    const cpuMs = (c.user + c.system) / 1000;
+    process.stdout.write(`${JSON.stringify({ lang, pattern: p.name, ms: Math.round(ms), cpuMs: Math.round(cpuMs), ok, error })}\n`);
   }
 }

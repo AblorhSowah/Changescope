@@ -109,3 +109,16 @@ export function shakeParams(intensity: number): ShakeParams {
     rot: round2(K.ROT_BASE + K.ROT_RANGE * i),
   };
 }
+
+/** `fileShake.animationIntensity`: non-finite -> 1; otherwise clamped to [0.25, 2]. */
+export function clampAnimationIntensity(k: number): number {
+  if (!Number.isFinite(k)) return 1;
+  return Math.min(2, Math.max(0.25, k));
+}
+
+/** Scales the distance and rotation of a shake (never its speed). A factor of 1 returns the input unchanged. */
+export function scaleShake(shake: ShakeParams, factor: number): ShakeParams {
+  const k = clampAnimationIntensity(factor);
+  if (k === 1) return shake;
+  return { amp: round2(shake.amp * k), dur: shake.dur, rot: round2(shake.rot * k) };
+}

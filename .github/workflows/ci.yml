@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: build, lint and unit tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run test:unit
+
+  integration:
+    name: integration tests (ubuntu, xvfb)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Libraries VS Code needs to start
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgbm1 libnss3 libgtk-3-0 libxss1 libasound2t64
+      - uses: actions/cache@v4
+        with:
+          path: .vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+      # downloads the current stable VS Code into .vscode-test on the first run
+      - run: xvfb-run -a npm run test:integration

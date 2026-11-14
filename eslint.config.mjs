@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/webview/**/*.ts'],
+    files: ['src/webview/**/*.ts', 'src/dashboard/**/*.ts'],
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       'no-restricted-properties': [

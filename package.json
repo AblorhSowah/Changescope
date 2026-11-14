@@ -1,9 +1,9 @@
 {
   "name": "file-shake",
   "displayName": "File Shake",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "file-shake",
-  "description": "See which files are being edited, live: green for the file being changed, yellow for the files it references, shaking in proportion to activity.",
+  "description": "Real-time developer activity intelligence for VS Code. Track file changes, understand external and AI-assisted modifications, explore dependencies and monitor your codebase.",
   "license": "MIT",
   "icon": "media/icon.png",
   "galleryBanner": {
@@ -21,11 +21,21 @@
     "imports",
     "claude",
     "ai",
-    "live"
+    "live",
+    "dashboard",
+    "git",
+    "dependencies",
+    "impact",
+    "sessions",
+    "agents",
+    "changes",
+    "monitoring",
+    "copilot",
+    "cursor"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/OWNER/file-shake.git"
+    "url": "https://github.com/AblorhSowah/file-shake.git"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -47,12 +57,29 @@
     }
   },
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fileShake",
+          "title": "File Shake",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
     "views": {
       "explorer": [
         {
           "type": "webview",
           "id": "fileShake.view",
           "name": "File Shake",
+          "contextualTitle": "File Shake"
+        }
+      ],
+      "fileShake": [
+        {
+          "type": "webview",
+          "id": "fileShake.dashboard",
+          "name": "Activity",
           "contextualTitle": "File Shake"
         }
       ]
@@ -77,6 +104,90 @@
         "command": "fileShake.showDebugInfo",
         "title": "Show Debug Info",
         "category": "File Shake"
+      },
+      {
+        "command": "fileShake.openDashboard",
+        "title": "Open Dashboard",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.openDashboardPanel",
+        "title": "Open Dashboard in Editor",
+        "category": "File Shake",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "fileShake.setViewMode",
+        "title": "Set View Mode",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.pause",
+        "title": "Pause Tracking",
+        "category": "File Shake",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "fileShake.resume",
+        "title": "Resume Tracking",
+        "category": "File Shake",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "fileShake.startSession",
+        "title": "Start Session",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.stopSession",
+        "title": "Stop Session",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.renameSession",
+        "title": "Rename Session",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.exportSessionReport",
+        "title": "Export Session Report",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.markAllReviewed",
+        "title": "Mark All Changes as Reviewed",
+        "category": "File Shake",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "fileShake.clearHistory",
+        "title": "Clear Activity History",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.rebuildDependencyIndex",
+        "title": "Rebuild Dependency Index",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.copyAgentHook",
+        "title": "Copy Agent Hook (Experimental)",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.ai.setKey",
+        "title": "Set AI Provider Key",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.ai.clearKey",
+        "title": "Clear AI Provider Key",
+        "category": "File Shake"
+      },
+      {
+        "command": "fileShake.ai.resetConsent",
+        "title": "Reset AI Consent",
+        "category": "File Shake"
       }
     ],
     "menus": {
@@ -90,6 +201,36 @@
           "command": "fileShake.toggle",
           "when": "view == fileShake.view",
           "group": "navigation"
+        },
+        {
+          "command": "fileShake.pause",
+          "when": "view == fileShake.dashboard && !fileShake.paused",
+          "group": "navigation@1"
+        },
+        {
+          "command": "fileShake.resume",
+          "when": "view == fileShake.dashboard && fileShake.paused",
+          "group": "navigation@1"
+        },
+        {
+          "command": "fileShake.markAllReviewed",
+          "when": "view == fileShake.dashboard",
+          "group": "navigation@2"
+        },
+        {
+          "command": "fileShake.openDashboardPanel",
+          "when": "view == fileShake.dashboard",
+          "group": "navigation@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "fileShake.pause",
+          "when": "!fileShake.paused"
+        },
+        {
+          "command": "fileShake.resume",
+          "when": "fileShake.paused"
         }
       ]
     },
@@ -240,6 +381,133 @@
           "default": true,
           "scope": "window",
           "markdownDescription": "Show the File Shake status bar item with the currently tracked file."
+        },
+        "fileShake.viewMode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "compact",
+            "impact"
+          ],
+          "enumDescriptions": [
+            "Rows shake with activity (the original experience)",
+            "Single-line rows, no shaking",
+            "Rows show an impact estimate and the number of dependants"
+          ],
+          "default": "live",
+          "scope": "window",
+          "markdownDescription": "Visual mode of the File Shake dashboard. `live` shakes rows with activity, `compact` shows calm single-line rows and also stops the shaking in the Explorer view, `impact` adds an impact estimate (from import edges) to each row."
+        },
+        "fileShake.animationIntensity": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.25,
+          "maximum": 2,
+          "scope": "window",
+          "markdownDescription": "Multiplies how far and how much rows shake, in the dashboard and in the File Shake Explorer view. 1 is the default; lower is calmer. Reduced motion and `fileShake.enableAnimation` still turn shaking off completely."
+        },
+        "fileShake.history.persist": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "markdownDescription": "Keep the activity history and sessions across restarts, in this workspace's storage managed by VS Code. Turn off to keep them in memory only (the stored copy is deleted)."
+        },
+        "fileShake.history.maxEvents": {
+          "type": "integer",
+          "default": 1000,
+          "minimum": 100,
+          "maximum": 5000,
+          "scope": "window",
+          "markdownDescription": "Maximum number of activity events kept. Rapid successive changes of one file by one source count as one event."
+        },
+        "fileShake.history.retentionDays": {
+          "type": "integer",
+          "default": 14,
+          "minimum": 1,
+          "maximum": 90,
+          "scope": "window",
+          "markdownDescription": "Activity events older than this many days are dropped."
+        },
+        "fileShake.git.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "markdownDescription": "Show Git changes in the dashboard and use repository state changes (checkout, pull, commit) to label nearby file changes as `git`. Uses the built-in Git extension; nothing is run by File Shake itself."
+        },
+        "fileShake.dependencies.index": {
+          "type": "string",
+          "enum": [
+            "onDemand",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Build in the background when first needed",
+            "Never build it"
+          ],
+          "default": "onDemand",
+          "scope": "window",
+          "markdownDescription": "Workspace dependency index (who imports whom, used for dependencies and the impact estimate). `onDemand` builds it in the background the first time you inspect a file or use Impact mode; `off` never builds it. The index lives in memory only."
+        },
+        "fileShake.dependencies.maxFiles": {
+          "type": "integer",
+          "default": 5000,
+          "minimum": 200,
+          "maximum": 20000,
+          "scope": "window",
+          "markdownDescription": "Maximum number of files the dependency index covers. Larger workspaces are indexed up to this limit and the dashboard says so."
+        },
+        "fileShake.collisions.notify": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "markdownDescription": "Show a warning when a file changes on disk while you have unsaved edits in it. File Shake never changes or reloads your document; VS Code keeps your unsaved text."
+        },
+        "fileShake.sensitiveGlobs": {
+          "type": "array",
+          "default": [
+            "**/.env*",
+            "**/*.pem",
+            "**/*.key",
+            "**/*.pfx",
+            "**/*.p12",
+            "**/id_rsa*",
+            "**/id_ed25519*",
+            "**/secrets/**",
+            "**/.npmrc",
+            "**/.netrc"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "scope": "window",
+          "markdownDescription": "Glob patterns (relative to the workspace folder) of files that are never read for dependency analysis and never included in any AI request. Their activity is still listed by name."
+        },
+        "fileShake.ai.mode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "assisted"
+          ],
+          "enumDescriptions": [
+            "Summaries are built on this machine",
+            "Use a provider registered by another extension, with your consent"
+          ],
+          "default": "local",
+          "scope": "window",
+          "markdownDescription": "`local` builds summaries on this machine from file names, counts and labels; nothing is sent anywhere. `assisted` uses a provider registered by another extension (chosen in `fileShake.ai.provider`), only after you agree in a dialog, and sends metadata only, never file contents. File Shake ships no provider."
+        },
+        "fileShake.ai.provider": {
+          "type": "string",
+          "default": "",
+          "pattern": "^([A-Za-z0-9][A-Za-z0-9._-]{0,63})?$",
+          "scope": "window",
+          "markdownDescription": "Id of the registered AI provider to use in `assisted` mode. Empty means none."
+        },
+        "fileShake.experimental.agentSignals": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "markdownDescription": "Experimental. Read a signal file that a hook you configure yourself appends to, so files written by that agent are labelled `AI agent`. Off by default. Use \"File Shake: Copy Agent Hook (Experimental)\" to get the hook snippet. File Shake only reads the file."
         }
       }
     }
@@ -249,13 +517,13 @@
     "build:prod": "node esbuild.mjs --production",
     "watch": "node esbuild.mjs --watch",
     "build:test": "node esbuild.mjs --tests",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p src/webview/tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p src/webview/tsconfig.json --noEmit && tsc -p src/dashboard/tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit",
     "lint": "eslint . && npm run typecheck",
     "test:unit": "node --import tsx --test \"test/unit/**/*.test.ts\" \"test/webview/**/*.test.ts\"",
     "test:integration": "npm run build && npm run build:test && node --import tsx test/integration/runTest.ts",
     "test": "npm run test:unit && npm run test:integration",
     "vscode:prepublish": "node esbuild.mjs --production",
-    "package": "vsce package --no-dependencies --allow-missing-repository"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

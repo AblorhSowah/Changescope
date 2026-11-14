@@ -1,4 +1,5 @@
 import type * as vscode from 'vscode';
+import type { RawEvent } from '../core/activity/attribution';
 import { ActivityTracker } from '../core/activityTracker';
 import { BurstGuard } from '../core/burstGuard';
 import { toTrackerOptions } from '../core/config';
@@ -6,6 +7,7 @@ import type { FileShakeConfig } from '../core/config';
 import { K } from '../core/constants';
 import { buildDecorations } from '../core/decorations';
 import { EventLog } from '../core/eventLog';
+import { scaleShake } from '../core/intensity';
 import { buildStatus } from '../core/statusText';
 import type {
   Clock,
@@ -36,6 +38,12 @@ export interface StatusSink {
   update(status: { text: string; tooltip: string }, visible: boolean): void;
 }
 
+/** What the controller tells the history layer (0.3.0). Failures there never affect tracking. */
+export interface ActivityHooks {
+  onEvent(e: RawEvent): void;
+  onRenamed(oldKey: FileKey, newKey: FileKey): void;
+}
+
 export interface ControllerDeps {
   clock: Clock;
   scheduler: Scheduler;
@@ -47,6 +55,7 @@ export interface ControllerDeps {
   extensionVersion: string;
   vscodeVersion: string;
   log(msg: string): void;
+  hooks?: ActivityHooks;
 }
 
 export interface DebugInfo {
@@ -126,6 +135,16 @@ export class ShakeController implements vscode.Disposable {
     return true;
   }
 
+  /** Forwards a classified file event to the history layer. */
+  onEvent(e: RawEvent): void {
+    if (this.disposed) return;
+    try {
+      this.deps.hooks?.onEvent(e);
+    } catch (err) {
+      this.deps.log(`history hook failed: ${String(err)}`);
+    }
+  }
+
   onDeleted(key: FileKey): void {
     this.tracker.forgetUnder(key);
     this.sources.delete(key);
@@ -136,6 +155,11 @@ export class ShakeController implements vscode.Disposable {
   /** Returns true when tracked state moved to the new name (so the rename's disk echo is not a new edit). */
   onRenamed(oldKey: FileKey, newKey: FileKey): boolean {
     const moved = this.tracker.renameUnder(oldKey, newKey) > 0;
+    try {
+      this.deps.hooks?.onRenamed(oldKey, newKey);
+    } catch (err) {
+      this.deps.log(`history hook failed: ${String(err)}`);
+    }
     this.sources.delete(oldKey);
     this.references.invalidateAll();
     this.rerequestShown();
@@ -292,7 +316,7 @@ export class ShakeController implements vscode.Disposable {
   }
 
   private analysisSettings(cfg: FileShakeConfig): string {
-    return `${cfg.maxFileSizeKb}|${JSON.stringify(cfg.excludeGlobs)}`;
+    return `${cfg.maxFileSizeKb}|${JSON.stringify(cfg.excludeGlobs)}|${JSON.stringify(cfg.sensitiveGlobs)}`;
   }
 
   private computeRows(cfg: FileShakeConfig, tracked: readonly TrackedFile[]): ViewRow[] {
@@ -312,9 +336,10 @@ export class ShakeController implements vscode.Disposable {
       v: 1,
       seq: this.seq,
       enabled: cfg.enable,
-      animate: cfg.enableAnimation,
+      // compact mode is the "calm" mode: it also stops the shaking in this view
+      animate: cfg.enableAnimation && cfg.viewMode !== 'compact',
       colors: { edited: cfg.editedColor, referenced: cfg.referencedColor },
-      rows: [...rows],
+      rows: cfg.animationIntensity === 1 ? [...rows] : rows.map((r) => ({ ...r, shake: scaleShake(r.shake, cfg.animationIntensity) })),
     };
   }
 

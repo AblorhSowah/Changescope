@@ -1,7 +1,8 @@
 **
 !dist/extension.js
 !dist/webview.js
-!media/**
+!dist/dashboard.js
+!media/*
 !package.json
 !README.md
 !CHANGELOG.md

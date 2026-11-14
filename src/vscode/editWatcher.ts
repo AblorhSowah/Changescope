@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { RawEvent } from '../core/activity/attribution';
 import { K } from '../core/constants';
 import type { BurstGuard } from '../core/burstGuard';
 import type { FileShakeConfig } from '../core/config';
@@ -9,7 +10,7 @@ import type { ContentChangeSize } from '../core/intensity';
 import { basename, isUnder } from '../core/pathUtils';
 import { classifyDocumentChange, classifyWatcherEvent } from '../core/sourceClassifier';
 import type { Classification } from '../core/sourceClassifier';
-import type { ClassifyReason, Clock, EditSource, FileKey, LogEntry, Scheduler, WorkspaceRoot } from '../core/types';
+import type { ActivityEventType, ClassifyReason, Clock, EditSource, FileKey, LogEntry, Scheduler, WorkspaceRoot } from '../core/types';
 import { fileKeyFromUri } from './uriKey';
 
 /** Receives accepted activity. Implemented by the controller. */
@@ -20,6 +21,8 @@ export interface ActivitySink {
   /** true = tracked state moved to the new name */
   onRenamed(oldKey: FileKey, newKey: FileKey): boolean;
   onProjectFileChanged(): void;
+  /** every accepted or deleted file event, after the calls above (0.3.0: history, sessions, attribution) */
+  onEvent?(e: RawEvent): void;
 }
 
 export interface EditWatcherDeps {
@@ -31,12 +34,15 @@ export interface EditWatcherDeps {
   log: EventLog;
   burst: BurstGuard;
   sink: ActivitySink;
+  /** while true every event is ignored with reason `paused` (rows that are already shown stay) */
+  isPaused?(): boolean;
 }
 
 const SAVE_SAFETY_MS = 5000;
 /** How long a clean-after-change event waits for the dirty-state event that follows a real edit. */
 const DIRTY_SETTLE_MS = 150;
 const MAX_SAVE_ENTRIES = 200;
+const MAX_WORKBENCH_ENTRIES = 200;
 const PROJECT_FILES = new Set(['tsconfig.json', 'jsconfig.json', 'go.mod', 'composer.json']);
 
 interface DocChange {
@@ -58,6 +64,8 @@ export class EditWatcher implements vscode.Disposable {
   private readonly lastSaveAt = new Map<FileKey, number>();
   /** Destinations of workbench renames that moved tracked state: their file-system echo is not an external edit. */
   private recentMoves: Array<{ key: FileKey; at: number }> = [];
+  /** File operations done through VS Code itself (explorer, applyEdit): the file-system events that follow are echoes. */
+  private recentWorkbench: Array<{ key: FileKey; at: number; type: ActivityEventType }> = [];
   private readonly pendingClean = new Map<FileKey, { change: DocChange; timer: { cancel(): void } }>();
   private matcher: { key: string; fn: (rel: string) => boolean } | undefined;
   private disposed = false;
@@ -73,9 +81,13 @@ export class EditWatcher implements vscode.Disposable {
           const to = fileKeyFromUri(f.newUri);
           if (from !== undefined && to !== undefined) {
             if (this.deps.sink.onRenamed(from, to)) this.noteMove(to);
+            this.noteWorkbench(from, 'delete');
+            this.noteWorkbench(to, 'create');
           }
         }
       }),
+      vscode.workspace.onDidCreateFiles((e) => this.onWorkbench(e.files, 'create')),
+      vscode.workspace.onDidDeleteFiles((e) => this.onWorkbench(e.files, 'delete')),
       vscode.workspace.onDidChangeWorkspaceFolders(() => this.rebuildWatchers()),
     );
     this.rebuildWatchers();
@@ -90,6 +102,7 @@ export class EditWatcher implements vscode.Disposable {
     this.pendingClean.clear();
     this.lastSaveAt.clear();
     this.recentMoves = [];
+    this.recentWorkbench = [];
     for (const w of this.fileWatchers) w.dispose();
     this.fileWatchers = [];
     for (const d of this.disposables) d.dispose();
@@ -108,6 +121,7 @@ export class EditWatcher implements vscode.Disposable {
       this.deps.log.add({ at: now, key: key ?? doc.uri.toString(), origin: 'doc', decision, reason, weight });
 
     if (!cfg.enable) return record('ignore', 'disabled');
+    if (this.paused()) return record('ignore', 'paused');
     if (key === undefined) return record('ignore', 'scheme');
     if (this.isExcluded(key)) return record('ignore', 'excluded');
 
@@ -175,7 +189,7 @@ export class EditWatcher implements vscode.Disposable {
       this.deps.log.add({ at: c.at, key: c.key, origin: 'doc', decision: 'ignore', reason: 'burst', weight: 0 });
       return;
     }
-    this.accept(c.key, cls, cfg, 'doc', c.at, () =>
+    this.accept(c.key, cls, cfg, 'doc', c.at, 'modify', () =>
       cls.decision === 'you' ? typingWeight(c.sizes) : K.EXTERNAL_EVENT_WEIGHT,
     );
   }
@@ -236,6 +250,7 @@ export class EditWatcher implements vscode.Disposable {
         if (key === undefined || this.disposed || !this.deps.getConfig().enable) return;
         this.deps.sink.onDeleted(key);
         if (PROJECT_FILES.has(basename(key))) this.deps.sink.onProjectFileChanged();
+        this.reportDelete(key);
       });
       this.fileWatchers.push(watcher);
     }
@@ -248,19 +263,19 @@ export class EditWatcher implements vscode.Disposable {
       this.deps.sink.onProjectFileChanged();
     }
     if (!created) {
-      this.handleDisk(uri);
+      this.handleDisk(uri, 'modify');
       return;
     }
     // directory creations are not file activity
     Promise.resolve(vscode.workspace.fs.stat(uri)).then(
       (stat) => {
-        if ((stat.type & vscode.FileType.Directory) === 0) this.handleDisk(uri);
+        if ((stat.type & vscode.FileType.Directory) === 0) this.handleDisk(uri, 'create');
       },
       () => undefined,
     );
   }
 
-  private handleDisk(uri: vscode.Uri): void {
+  private handleDisk(uri: vscode.Uri, eventType: ActivityEventType): void {
     if (this.disposed) return;
     const now = this.deps.clock.now();
     const key = fileKeyFromUri(uri);
@@ -269,6 +284,7 @@ export class EditWatcher implements vscode.Disposable {
       this.deps.log.add({ at: now, key: key ?? uri.toString(), origin: 'watcher', decision, reason, weight });
 
     if (!cfg.enable) return record('ignore', 'disabled');
+    if (this.paused()) return record('ignore', 'paused');
     if (key === undefined) return record('ignore', 'scheme');
     if (this.isExcluded(key)) return record('ignore', 'excluded');
     if (!this.deps.burst.accept(key)) return record('ignore', 'burst');
@@ -276,7 +292,64 @@ export class EditWatcher implements vscode.Disposable {
     const saved = this.lastOwnWriteAt(key, now);
     const cls = classifyWatcherEvent({ msSinceOwnSave: saved === undefined ? undefined : now - saved });
     if (cls.decision === 'ignore') return record('ignore', cls.reason);
-    this.accept(key, cls, cfg, 'watcher', now, () => K.EXTERNAL_EVENT_WEIGHT);
+    this.accept(key, cls, cfg, 'watcher', now, eventType, () => K.EXTERNAL_EVENT_WEIGHT);
+  }
+
+  // ---- workbench operations and history events ---------------------------------
+
+  private paused(): boolean {
+    return this.deps.isPaused?.() === true;
+  }
+
+  private noteWorkbench(key: FileKey, type: ActivityEventType): void {
+    const now = this.deps.clock.now();
+    this.recentWorkbench = this.recentWorkbench.filter((m) => now - m.at < K.SELF_SAVE_WINDOW_MS);
+    this.recentWorkbench.push({ key, at: now, type });
+    if (this.recentWorkbench.length > MAX_WORKBENCH_ENTRIES) this.recentWorkbench.splice(0, this.recentWorkbench.length - MAX_WORKBENCH_ENTRIES);
+  }
+
+  /** Is this watcher event the file-system echo of something VS Code itself just did to the path (or a folder above it)? */
+  private isWorkbenchEcho(key: FileKey, type: ActivityEventType, at: number): boolean {
+    return this.recentWorkbench.some((m) => m.type === type && at - m.at < K.SELF_SAVE_WINDOW_MS && isUnder(m.key, key));
+  }
+
+  /** Files created or deleted through VS Code (explorer, `workspace.applyEdit`): a developer action, reported only to the history. */
+  private onWorkbench(files: readonly vscode.Uri[], type: 'create' | 'delete'): void {
+    if (this.disposed) return;
+    const cfg = this.deps.getConfig();
+    for (const uri of files) {
+      const key = fileKeyFromUri(uri);
+      if (key === undefined) continue;
+      this.noteWorkbench(key, type);
+      if (!cfg.enable || this.paused() || this.isExcluded(key) || !this.deps.burst.accept(key)) continue;
+      if (type === 'delete') {
+        this.emit(key, 'delete', 'you', 'active-focused-edit', 'workbench', this.deps.clock.now());
+        continue;
+      }
+      // a created folder is not file activity
+      Promise.resolve(vscode.workspace.fs.stat(uri)).then(
+        (stat) => {
+          if ((stat.type & vscode.FileType.Directory) === 0) this.emit(key, 'create', 'you', 'active-focused-edit', 'workbench', this.deps.clock.now());
+        },
+        () => undefined,
+      );
+    }
+  }
+
+  private reportDelete(key: FileKey): void {
+    const cfg = this.deps.getConfig();
+    if (this.paused() || this.isExcluded(key) || !this.deps.burst.accept(key)) return;
+    if (!cfg.detectExternalEdits) return;
+    this.emit(key, 'delete', 'external', 'disk-write', 'watcher', this.deps.clock.now());
+  }
+
+  private emit(key: FileKey, eventType: ActivityEventType, decision: 'you' | 'external', reason: ClassifyReason, origin: RawEvent['origin'], at: number): void {
+    if (this.disposed || (origin === 'watcher' && this.isWorkbenchEcho(key, eventType, at))) return;
+    try {
+      this.deps.sink.onEvent?.({ key, eventType, decision, reason, origin, at });
+    } catch {
+      // history must never break change tracking
+    }
   }
 
   // ---- shared ----------------------------------------------------------------
@@ -287,17 +360,24 @@ export class EditWatcher implements vscode.Disposable {
     cfg: FileShakeConfig,
     origin: LogEntry['origin'],
     at: number,
+    eventType: ActivityEventType,
     weightOf: () => number,
   ): void {
     const record = (decision: LogEntry['decision'], reason: ClassifyReason, weight = 0): void =>
       this.deps.log.add({ at, key, origin, decision, reason, weight });
     if (cls.decision === 'ignore') return record('ignore', cls.reason);
+    // a change parked for its dirty flag can be settled after pause began
+    if (this.paused()) return record('ignore', 'paused');
     if (cls.decision === 'external' && !cfg.detectExternalEdits) return record('ignore', 'external-detection-off');
     const source: EditSource = cls.decision;
     const weight = weightOf();
     if (!(weight > 0)) return record('ignore', 'no-content-change');
-    if (this.deps.sink.onActivity(key, source, weight)) record(source, cls.reason, weight);
-    else record('ignore', 'dedupe', weight);
+    if (this.deps.sink.onActivity(key, source, weight)) {
+      record(source, cls.reason, weight);
+      this.emit(key, eventType, source, cls.reason, origin, at);
+    } else {
+      record('ignore', 'dedupe', weight);
+    }
   }
 
   private isExcluded(key: FileKey): boolean {

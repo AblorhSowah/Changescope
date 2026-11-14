@@ -60,6 +60,9 @@ test/
     workspace/  multiroot/  outside/   trees copied into a temp dir for each launch
 ```
 
+Support for the 0.3.0 tests: `test/support/dashState.ts` (valid `DashboardState` builders, each checked with the real validator), `dashDom.ts` (jsdom harness with a fake `AppEnv`), `synthetic.ts` (deterministic synthetic workspaces and dashboard inputs), `perfGuard.ts` (load compensation for the wall-clock guards, see below).
+Known-open defects can be written as `{ todo: 'open: QA-nnn' }` unit tests: `node --test` reports them as `todo` (a warning line) and does not fail the run; remove the option once the defect is fixed. QA-101 to QA-111 are fixed and no `todo` is left (the unit run reports `todo 0`).
+
 Fixture files carry a `.fixture` suffix, which `copyFixtureTree` strips on copy. That keeps deliberately odd sources
 out of `tsc`, `eslint` and the `.vsix`.
 
@@ -71,7 +74,12 @@ out of `tsc`, `eslint` and the `.vsix`.
   re-reading state (`waitUntil` in `suite/helpers.ts`, bounded by a timeout) or by `api.whenReferencesIdle()`.
 * No network. The only download path is `@vscode/test-electron` when `FS_VSCODE_EXE` is not set.
 * The pathological-input performance test runs in a child process with a hard timeout, so a catastrophic regex fails the
-  test instead of hanging the run.
+  test instead of hanging the run. It guards the CPU time of each combination (`process.cpuUsage` in the child), not wall time,
+  because `node --test` runs the other files in parallel and wall time inflates 10 times on a busy machine.
+* Wall-clock guards (`performance*.test.ts`, `tree.test.ts`, `render.test.ts`) use `scaled(ms)` from `test/support/perfGuard.ts`: the
+  documented threshold multiplied by how much slower this machine is than an idle one right now (a fixed calibration workload; factor 1 when
+  idle, at most 30). A guard is therefore never tighter than its documented value. Regression guards that must tell a fast path from a slow one
+  (for example "50 impact lookups with the prebuilt test index under 100 ms") stay small enough to fail when the fast path is lost.
 
 ## What each test file covers
 
@@ -97,6 +105,10 @@ out of `tsc`, `eslint` and the `.vsix`.
 | `unit/manifest.test.ts` | 13: manifest, pinned toolchain, settings vs `core/config`, README honesty, icon, licence |
 | `unit/harness.test.ts` | the integration harness itself (env scrub, layouts, suite selection) |
 | `webview/render.test.ts`, `motion.test.ts`, `interaction.test.ts`, `security.test.ts`, `lifecycle.test.ts`, `css.test.ts` | 11, 12 (W rows) |
-| `unit/vsix.test.ts` | package audit of `file-shake-0.2.0.vsix` (run `npm run package` first): exact 10-file list, size, no maps, manifest, icon header, `require()` set, stub-`vscode` load of the bundle |
+| `unit/vsix.test.ts` | package audit of `file-shake-0.3.0.vsix` (run `npm run package` first): exact 13-file list, size, no maps, manifest, icon header, `require()` set, stub-`vscode` load of the bundle |
 | `unit/analyzeProperties.test.ts` | invariants of `analyzeReferences` over random trees and random import statements in 11 language families |
-| `integration/suite/*.test.ts` | 14 integration list, 12 (I rows) in a real VS Code. `70-scenarios` real-world scenarios (external processes, fan-out, rename/delete, floods, enable toggling, atomic replace), `75-adversarial` defect reproductions (`[QA-nnn]` tests FAIL until the defect is fixed), `76-folders.multi` folders added/removed at runtime, `80-performance` per-edit cost on the real adapters |
+| `unit/attribution`, `eventStore`, `collision`, `sessionManager`, `sessionReport`, `storageSchema`, `historyRoundTrip`, `depGraph`, `testMatch`, `impact`, `gitModel`, `aiProvider`, `agentSignal`, `timeFormat`, `dashboardProtocol`, `dashboardModel`, `references030`, `staticChecksDashboard`, `performance030` | 0.3.0 core, written from `docs/DESIGN-0.3.0.md` (sections 4 to 13); `performance030` holds the regression guards, `test/perf/bench030.ts` prints the numbers recorded in `docs/BENCHMARKS.md` |
+| `unit/safeDisplayPath`, `signalChunker`, `testIndex`, `perfGuard` | the bug-fix round (QA-101, QA-110, QA-108): `toSafeDisplayPath` (inside one folder, several folders, nested folders, outside, no folder, Windows keys, 3,000 random keys, and no directory in any session report or AI summary input built from outside files), `SignalChunker` split at every byte and every pair of offsets, `signalTail` and `signalPrefixKept`, `buildTestIndex` and `relatedTestsIn` against an independent reference over 4,000 random lookups and `analyseImpact` with and without the index, and the load-compensation helper |
+| `webview/dashboard-render`, `-interaction`, `-motion`, `-security`, `-css`, `-fuzz`, `-bundle` | the dashboard (`src/dashboard`, `media/dashboard.css`) in jsdom against `mountDashboard`; `-bundle` runs the real `dist/dashboard.js` (build first) |
+| `integration/suite/55-dashboard.multi`, `65-dashboard.none`, `81-dashboard.single`, `82-activity.single`, `83-intelligence.single`, `84-ai-agents.single` | 0.3.0 in real VS Code: dashboard view and messages, attribution, pause, sessions, persistence, dependency index and impact, collisions, Git (needs the built-in Git extension: the standard launch uses `--disable-extensions`, so run `FS_INSTALLED_VSIX=...` to include it), AI consent and providers, agent signal file, `reportAgentActivity`. Tests whose title starts with `[QA-nnn]` were written to FAIL until that defect in `docs/QA_REPORT.md` was fixed; all of them pass now. `83` and `84` also cover the sensitive-file rules (`sensitiveGlobs` match in any case, the Explorer reference service skips sensitive files). Support: `suite/helpers030.ts` |
+| `integration/suite/*.test.ts` | 14 integration list, 12 (I rows) in a real VS Code. `70-scenarios` real-world scenarios (external processes, fan-out, rename/delete, floods, enable toggling, atomic replace), `75-adversarial` defect reproductions (`[QA-nnn]` tests fail while the defect is open), `76-folders.multi` folders added/removed at runtime, `80-performance` per-edit cost on the real adapters |

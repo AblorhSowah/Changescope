@@ -5,6 +5,7 @@ import type { Harness } from '../support/dom';
 import { snapshotOf, viewRow } from '../support/builders';
 import { must } from '../support/fixtures';
 import type { ViewRow } from '../support/types';
+import { scaled } from '../support/perfGuard';
 
 let h: Harness | undefined;
 afterEach(() => {
@@ -361,7 +362,7 @@ describe('webview: updates keep DOM nodes (no full re-render)', () => {
     h.sendRows(rows);
     const ms = performance.now() - t0;
     assert.equal(rowEls(h.root).length, 500);
-    assert.ok(ms < 3000, `render took ${ms.toFixed(0)} ms`);
+    assert.ok(ms < scaled(3000), `render took ${ms.toFixed(0)} ms`);
   });
 });
 

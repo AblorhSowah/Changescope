@@ -82,3 +82,55 @@ Counting examples (1)-(4) of DESIGN 14 give 4/1, 3/3, 2, 5. Perf: 400 KB / 5000-
 - Tests: tracker persist mode (14), view model actor (5), tree sections (7), protocol actor (3), webview sections (6), integration suite `77-persistence.single` (13, real VS Code). Seven older integration tests assert timed removal and set `persistUntilNextFile` to `false` explicitly. Version pins moved to 0.2.0.
 - Checked by mutation in scratch copies (each killed by the matching tests): switching files never releases you; window blur never releases you; the view-click guard removed; an idle file never replaced by the same user's next file.
 - Release checklist above still applies; the package is now `file-shake-0.2.0.vsix`.
+
+## 0.3.0 host build (Host Builder) : DONE, awaiting Tester pin updates and the dashboard visual pass
+Contract: `docs/DESIGN-0.3.0.md` (its `## Deviations` section lists every departure, the test seams and the extra exports). Host Builder owns src/core (except the fixed type block and `core/dashboard/protocol.ts`), src/vscode, src/extension.ts, package.json, README, CHANGELOG, .github, this file.
+
+### What exists
+- Core (pure, no vscode/node): `activity/{attribution,eventStore,collision}`, `sessions/{sessionManager,report}`, `storage/schema`, `intelligence/{depGraph,testMatch,impact}`, `git/gitModel`, `ai/{provider,localSummary,agentSignal}`, `dashboard/model` (buildDashboardState, stateSignature), `timeFormat`, config (13 new fields), `intensity.scaleShake`, `ReferenceTarget.kinds`, `ClassifyReason 'paused'`.
+- Adapters: `vscode/{storage,activityService,gitService,dependencyIndex,collisionNotifier,agentSignal,aiService,dashboardProvider,commands}.ts`; `editWatcher` (onEvent hook, workbench create/delete, pause gate), `controller` (hooks, compact mode, animationIntensity), `extension.ts` (wiring, 5 API additions, test seams).
+- Manifest 0.3.0 (16 commands, 13 settings, Activity Bar container + view, dashboard view title menu), README, CHANGELOG, `.github/workflows/{ci,release}.yml`.
+
+### Verification (latest)
+- `npm run build`, `npm run lint` (eslint . + typecheck of all four tsconfigs): clean.
+- `npm run test:unit`: 1358 tests, 1336 pass, 10 fail, 12 skip. All 10 failures are pins to 0.2.0 shapes (see below); the Tester must update them.
+- `npm run package` (no `--allow-missing-repository` needed): `file-shake-0.3.0.vsix`, 13 files, 113 KB: package.json, readme, changelog, LICENSE.txt, dist/{extension,webview,dashboard}.js, media/{activity.svg,dashboard.css,icon.png,webview.css}. No maps, sources, tests or node_modules. CLI install into isolated dirs lists `file-shake.file-shake@0.3.0`.
+- Integration (`FS_VSCODE_EXE="/Applications/Visual Studio Code.app/Contents/MacOS/Electron" npm run test:integration`, VS Code 1.129.1): variant single 97 pass, 1 pending, 1 fail; multi 23 pass, 1 fail; none 22 pass, 1 fail; real 6 pass. The one failure in each variant is the `extensionVersion === '0.2.0'` pin in `01-activation`. Run before the last one-line change to `editWatcher.accept` (extra pause gate); lint, unit and the smoke test were re-run after it, the integration suite was not.
+- Real-host smoke test of the 0.3.0 features (scratch script, NOT in the repo, driven through `FileShakeApi.testing`; passes 25 of 25 steps in 3 of 3 runs on the dev build and 2 of 2 on the packaged production bundle; one earlier run timed out after 40 s waiting for the Git lists to show an untracked and a modified file, not reproduced and cause not established): 25 steps pass: api surface and 16 commands, dashboard view loads `dist/dashboard.js` and posts ready, developer / external / agent / git attribution with method and confidence, pause, sessions and report (no absolute paths), dependency index (reverse edges, impact, related tests, not started by itself), incremental re-index, collision warning, git lists and head-change relabelling, AI local / assisted / consent once / provider error falls back / sensitive files and absolute paths never in a request, agent signal file, review counts, compact mode and animationIntensity reach the Explorer snapshot, malformed messages ignored, copyAgentHook, Memento round trip and reload, clearHistory confirmation, history.persist off/on, maxEvents, editor panel (one at a time), zero timers when idle.
+
+### Existing tests that the 0.3.0 changes break (all pins, Tester to update)
+- `test/unit/config.test.ts`: `has exactly the documented keys`, `unknown keys are dropped; the result has exactly the documented keys`, `valid values pass through unchanged` (DEFAULT_CONFIG / FileShakeConfig gained 13 fields).
+- `test/unit/manifest.test.ts`: `identity` (version), `npm run typecheck` (script now also checks `src/dashboard/tsconfig.json`), `npm run package` (flag removed), `the four commands with the File Shake category` (20 commands now), `view title menu offers clear + toggle for this view only` (dashboard view title entries added), `exactly the documented 15 settings` (28 now), `.vscodeignore excludes everything and un-ignores exactly the shipped files` (Dashboard Builder added `dist/dashboard.js`, `media/*`).
+- `test/integration/suite/01-activation.test.ts`: `fileShake.showDebugInfo writes the documented JSON...` asserts `extensionVersion === '0.2.0'`.
+- Likely also pinned (skipped here because no 0.2.0 vsix exists): `test/unit/vsix.test.ts` (file name, file list, version).
+- A timing test (`no language x pattern combination takes more than 1000 ms`) failed once while VS Code was running the integration suite on the same machine; it passes alone (212/212 in `performance` + `parsers`).
+
+### Things to know when continuing
+- The 0.3.0 timers (storage 1000 ms, dashboard 250 ms throttle, re-index 500 ms, AI timeout) all use the injected Scheduler and are cancelled on dispose. In test mode the index never starts by itself, Git reads state immediately, and an unrelated settings change or an unchanged model schedules nothing. Do not make `controller.onDidUpdate` call `dashboard.invalidate()` directly: every `testing.advance()` refreshes the controller and would leave a timer pending forever (use `invalidateLive`).
+- `vscode.git`'s repository state is a class with prototype getters: never spread it, read properties (`gitService.read`).
+- VS Code keeps workspace storage in memory for an extension-test host (no `state.vscdb` is written), so restart persistence cannot be tested through `@vscode/test-electron`. The suite can use `testing.storedHistory()` and `testing.reloadHistory()` (Memento round trip in one session).
+- Not verified: CI workflows (never run on GitHub), the Windows and Linux unit runs, VS Code 1.85 floor, the dashboard in a real browser (Dashboard Builder's job), a restart against real storage.
+- Not done: publishing (publisher id is still the placeholder `file-shake`), no network AI provider (by design).
+
+## 0.3.0 bug-fix round (Host Builder): DONE
+Source: docs/QA_REPORT.md "0.3.0 round 1" and "round 2". Every item is fixed at its root cause; details and decisions are in `docs/DESIGN-0.3.0.md` under "Host Builder, bug-fix round".
+
+| ID | Fix |
+|---|---|
+| QA-101 | `core/pathUtils.toSafeDisplayPath` (workspace-relative, or `(outside workspace)/<name>`); used by `ActivityService.sessionReport` and `DashboardProvider.summarize`. `toDisplayPath` and the dashboard state are unchanged. |
+| QA-102 / QA-103 | `DepGraph.dependants` treats Infinity as unbounded; duplicate edges keep the strongest type (import, reference, inheritance, export, unknown). |
+| QA-104 / QA-105 / QA-106 | `core/dashboard/protocol.ts`: holes rejected, `type` read once, C1 controls stripped. |
+| QA-107 | `EventStore.recent(Infinity)` returns all. |
+| QA-108 | `TestIndex` (`buildTestIndex`, `relatedTestsIn`), cached by `DependencyIndex` per change of the indexed paths; 50 impacts at 10,000 files: about 127 ms to about 2 ms; fuzz equivalence 14,400 lookups, 0 differences. |
+| QA-109 | `sensitiveGlobs` always case-insensitive (index, AI request, and the Explorer view analysis no longer reads sensitive sources). |
+| QA-110 | `SignalChunker` (bytes, line decoded after its newline) plus replaced-file detection (last 64 bytes before the offset and mtime). |
+| QA-111 | `DependencyIndex` remembers the importers of a deleted path (bounded) and re-analyses them when the path reappears. |
+| doc + hardening | `EventStore.add` review barrier documented; `buildDashboardState` clamps every number it passes through. |
+
+### Verification (this round)
+- `npx tsc -p tsconfig.json --noEmit`, `npm run lint`, `npm run build`: clean.
+- `npm run test:unit` (final run, 2026-11-14): 2501 tests, 2501 pass, 0 fail, 0 skipped, 0 todo (the QA-102 to QA-107 tests no longer carry the `todo` option).
+- Integration (`FS_VSCODE_EXE=... caffeinate -i npm run test:integration`), 2026-11-14, calm machine: with the test VS Code window held in front (Tester's final run, repeated against the installed `.vsix`): single 169 pass, 2 pending, 0 fail; multi 28; none 31; real 6. A run of mine without keeping the window in front: single 168 pass, 2 pending, 1 fail; the failure is the unchanged 0.2.0 test `undo is classified as you (undo-redo), never as a reload`, which acts on the focused editor and fails when another window holds the OS focus (it passes alone with VS Code in front). The 2 pending are the QA-002 reproducer and the Git-lists test, which skips itself when the built-in Git extension is unavailable. Runs made while the machine was swapping (load average 200 to 350, battery at 1 to 3 percent; one run took 42 minutes instead of 3) failed up to 7 wall-clock tests; they passed once it recovered.
+- `node esbuild.mjs --production && npm run package`: `file-shake-0.3.0.vsix`, exactly 13 files, about 115 KB; no maps, sources, tests or screenshots.
+- The scratch real-host smoke test (not in the repo) passes 24 of 25 steps in this session: the Git-lists step times out because the built-in Git extension only refreshes after file changes while the window is focused (checked in its `main.js`: `whenIdleAndFocused()` before every `status()`); after `git.refresh` File Shake's lists match `git status` exactly. Earlier in the day, with the window focused, all 25 passed.
+- `docs/BENCHMARKS.md` and the benchmark script are the Tester's; round 3 re-measured `analyseImpact` with `buildTestIndex` (the real code path) and keeps the old scan-per-call figures for comparison.

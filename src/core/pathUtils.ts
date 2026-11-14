@@ -136,3 +136,23 @@ export function toDisplayPath(key: FileKey, roots: readonly WorkspaceRoot[]): Di
   const segs = absDir.split('/').filter((s) => s !== '');
   return { name, dir: absDir, folderPath: [OUTSIDE, ...segs] };
 }
+
+/**
+ * A path that is safe to leave the machine or to be saved in a document: reports and AI requests.
+ * Inside a workspace folder it is the path relative to that folder (prefixed with the folder name when
+ * several folders are open, like `toDisplayPath`). Outside every folder, and in a window with no folder,
+ * it is only `(outside workspace)/<file name>`: no directory, so no home folder or user name.
+ * `toDisplayPath` is for the sidebar views and keeps the absolute folder of such files.
+ */
+export function toSafeDisplayPath(key: FileKey, roots: readonly WorkspaceRoot[]): string {
+  const name = basename(key);
+  let best: WorkspaceRoot | undefined;
+  for (const r of roots) {
+    if (isUnder(r.key, key) && key !== r.key && (!best || r.key.length > best.key.length)) best = r;
+  }
+  if (best) {
+    const rel = relativeTo(best.key, key) ?? name;
+    return roots.length > 1 ? `${best.name}/${rel}` : rel;
+  }
+  return name === '' ? OUTSIDE : `${OUTSIDE}/${name}`;
+}

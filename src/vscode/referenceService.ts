@@ -24,7 +24,7 @@ interface CacheEntry {
 }
 
 /** ProbeFs over workspace.fs: async, never throws, never follows symlinks itself. */
-function createProbeFs(): ProbeFs {
+export function createProbeFs(): ProbeFs {
   const decoder = new TextDecoder('utf-8');
   return {
     async isFile(p: FileKey): Promise<boolean> {
@@ -78,6 +78,7 @@ export class ReferenceService implements vscode.Disposable {
   private readonly projects = new Map<string, Promise<ProjectInfo>>();
   private idleWaiters: Array<() => void> = [];
   private matcher: { key: string; fn: (rel: string) => boolean } | undefined;
+  private sensitive: { key: string; fn: (rel: string) => boolean } | undefined;
   private disposed = false;
 
   constructor(private readonly deps: ReferenceServiceDeps) {}
@@ -218,6 +219,13 @@ export class ReferenceService implements vscode.Disposable {
     return (key) => fn(relativeForMatch(key, roots));
   }
 
+  /** Sensitive sources are never read (case-insensitive on every platform: matching too much is the safe error). */
+  private isSensitive(key: FileKey, cfg: FileShakeConfig, roots: readonly WorkspaceRoot[]): boolean {
+    const id = JSON.stringify(cfg.sensitiveGlobs);
+    if (this.sensitive?.key !== id) this.sensitive = { key: id, fn: createExcludeMatcher(cfg.sensitiveGlobs, { nocase: true }) };
+    return this.sensitive.fn(relativeForMatch(key, roots));
+  }
+
   private projectInfo(from: FileKey, roots: readonly FileKey[]): Promise<ProjectInfo> {
     const cacheKey = `${dirname(from)}|${roots.join(',')}`;
     let p = this.projects.get(cacheKey);
@@ -242,7 +250,7 @@ export class ReferenceService implements vscode.Disposable {
     if (!cfg.enable) return;
     const roots = this.deps.getRoots();
     const maxBytes = cfg.maxFileSizeKb * 1024;
-    const settingsKey = `${cfg.maxFileSizeKb}|${JSON.stringify(cfg.excludeGlobs)}`;
+    const settingsKey = `${cfg.maxFileSizeKb}|${JSON.stringify(cfg.excludeGlobs)}|${JSON.stringify(cfg.sensitiveGlobs)}`;
 
     let text: string;
     let languageId = '';
@@ -260,6 +268,9 @@ export class ReferenceService implements vscode.Disposable {
       };
       this.store(key, { versionKey, settingsKey, result }, gen);
     };
+
+    // before any read: a file the user marked sensitive is not opened for analysis at all
+    if (this.isSensitive(key, cfg, roots)) return skip('sensitive', 'excluded');
 
     const doc = vscode.workspace.textDocuments.find((d) => fileKeyFromUri(d.uri) === key);
     if (doc) {

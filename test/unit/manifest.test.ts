@@ -24,9 +24,10 @@ interface Pkg {
   activationEvents: string[];
   capabilities: { untrustedWorkspaces: { supported: boolean | string }; virtualWorkspaces: { supported: boolean | string; description?: string } };
   contributes: {
-    views: { explorer: Array<{ type: string; id: string; name: string; contextualTitle?: string }> };
-    commands: Array<{ command: string; title: string; category?: string }>;
-    menus: { 'view/title': Array<{ command: string; when: string; group: string }> };
+    viewsContainers: { activitybar: Array<{ id: string; title: string; icon: string }> };
+    views: { explorer: Array<{ type: string; id: string; name: string; contextualTitle?: string }>; fileShake: Array<{ type: string; id: string; name: string; contextualTitle?: string }> };
+    commands: Array<{ command: string; title: string; category?: string; icon?: string }>;
+    menus: { 'view/title': Array<{ command: string; when: string; group: string }>; commandPalette: Array<{ command: string; when: string }> };
     colors: Array<{ id: string; description: string; defaults: Record<string, string> }>;
     configuration: { title: string; properties: Record<string, Prop> };
   };
@@ -41,6 +42,8 @@ interface Prop {
   minimum?: number;
   maximum?: number;
   pattern?: string;
+  enum?: string[];
+  enumDescriptions?: string[];
   scope?: string;
   markdownDescription?: string;
   items?: { type: string };
@@ -53,7 +56,7 @@ describe('package.json: identity and platform fields', () => {
   it('identity', () => {
     assert.equal(pkg.name, 'file-shake');
     assert.equal(pkg.displayName, 'File Shake');
-    assert.equal(pkg.version, '0.2.0');
+    assert.equal(pkg.version, '0.3.0');
     assert.equal(pkg.publisher, 'file-shake');
     assert.equal(pkg.license, 'MIT');
     assert.ok(pkg.description.length > 20);
@@ -79,7 +82,7 @@ describe('package.json: identity and platform fields', () => {
     assert.equal(pkg.icon, 'media/icon.png');
     assert.deepEqual(pkg.galleryBanner, { color: '#0d1117', theme: 'dark' });
     assert.deepEqual(pkg.categories, ['Visualization', 'Other']);
-    for (const k of ['files', 'activity', 'explorer', 'imports', 'claude', 'ai', 'live']) assert.ok(pkg.keywords.includes(k), k);
+    for (const k of ['files', 'activity', 'explorer', 'imports', 'claude', 'ai', 'live', 'dashboard', 'git', 'dependencies', 'impact', 'sessions']) assert.ok(pkg.keywords.includes(k), k);
   });
 
   it('no runtime `dependencies` (everything is bundled; the .vsix ships without node_modules)', () => {
@@ -129,13 +132,13 @@ describe('package.json: scripts (DESIGN 13)', () => {
     'build:prod': 'node esbuild.mjs --production',
     watch: 'node esbuild.mjs --watch',
     'build:test': 'node esbuild.mjs --tests',
-    typecheck: 'tsc -p tsconfig.json --noEmit && tsc -p src/webview/tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit',
+    typecheck: 'tsc -p tsconfig.json --noEmit && tsc -p src/webview/tsconfig.json --noEmit && tsc -p src/dashboard/tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit',
     lint: 'eslint . && npm run typecheck',
     'test:unit': 'node --import tsx --test "test/unit/**/*.test.ts" "test/webview/**/*.test.ts"',
     'test:integration': 'npm run build && npm run build:test && node --import tsx test/integration/runTest.ts',
     test: 'npm run test:unit && npm run test:integration',
     'vscode:prepublish': 'node esbuild.mjs --production',
-    package: 'vsce package --no-dependencies --allow-missing-repository',
+    package: 'vsce package --no-dependencies',
   };
   for (const [name, cmd] of Object.entries(expected)) {
     it(`npm run ${name}`, () => assert.equal(pkg.scripts[name], cmd));
@@ -143,7 +146,7 @@ describe('package.json: scripts (DESIGN 13)', () => {
 });
 
 describe('package.json: contributes.views / commands / menus', () => {
-  it('one webview view in the Explorer sidebar with id fileShake.view', () => {
+  it('one webview view in the Explorer sidebar with id fileShake.view (unchanged since 0.2.0)', () => {
     assert.equal(pkg.contributes.views.explorer.length, 1);
     const v = must(pkg.contributes.views.explorer[0]);
     assert.equal(v.type, 'webview');
@@ -151,22 +154,79 @@ describe('package.json: contributes.views / commands / menus', () => {
     assert.equal(v.name, 'File Shake');
   });
 
-  it('the four commands with the File Shake category', () => {
+  it('0.3.0: an Activity Bar container "fileShake" with a monochrome icon, holding the webview view fileShake.dashboard', () => {
+    assert.deepEqual(pkg.contributes.viewsContainers.activitybar, [{ id: 'fileShake', title: 'File Shake', icon: 'media/activity.svg' }]);
+    assert.equal(pkg.contributes.views.fileShake.length, 1);
+    const v = must(pkg.contributes.views.fileShake[0]);
+    assert.equal(v.type, 'webview');
+    assert.equal(v.id, 'fileShake.dashboard');
+    assert.equal(v.name, 'Activity');
+    const svg = readRepoFile('media/activity.svg');
+    assert.match(svg, /currentColor/, 'the Activity Bar icon takes its colour from the theme');
+    assert.doesNotMatch(svg, /#[0-9a-fA-F]{3,8}\b|rgb\(|<script|<image|href=|on[a-z]+=/i, 'no literal colour, script, image or handler');
+  });
+
+  const COMMANDS_0_2 = ['fileShake.clear', 'fileShake.focusView', 'fileShake.showDebugInfo', 'fileShake.toggle'];
+  const COMMANDS_0_3 = [
+    'fileShake.openDashboard',
+    'fileShake.openDashboardPanel',
+    'fileShake.setViewMode',
+    'fileShake.pause',
+    'fileShake.resume',
+    'fileShake.startSession',
+    'fileShake.stopSession',
+    'fileShake.renameSession',
+    'fileShake.exportSessionReport',
+    'fileShake.markAllReviewed',
+    'fileShake.clearHistory',
+    'fileShake.rebuildDependencyIndex',
+    'fileShake.copyAgentHook',
+    'fileShake.ai.setKey',
+    'fileShake.ai.clearKey',
+    'fileShake.ai.resetConsent',
+  ];
+
+  it('the four 0.2.0 commands are all still there, unrenamed (no command is removed in 0.3.0)', () => {
+    const cmds = pkg.contributes.commands.map((c) => c.command);
+    for (const id of COMMANDS_0_2) assert.ok(cmds.includes(id), id);
+  });
+
+  it('exactly the twenty documented commands (4 from 0.2.0 + the 16 of DESIGN-0.3.0 section 12), all in the File Shake category with a title', () => {
     const cmds = pkg.contributes.commands.map((c) => c.command).sort();
-    assert.deepEqual(cmds, ['fileShake.clear', 'fileShake.focusView', 'fileShake.showDebugInfo', 'fileShake.toggle']);
+    assert.deepEqual(cmds, [...COMMANDS_0_2, ...COMMANDS_0_3].sort());
+    assert.equal(new Set(cmds).size, 20, 'no duplicate');
     for (const c of pkg.contributes.commands) {
       assert.equal(c.category, 'File Shake');
       assert.ok(c.title.length > 0);
     }
   });
 
-  it('view title menu offers clear + toggle for this view only', () => {
-    const items = pkg.contributes.menus['view/title'];
-    assert.deepEqual(items.map((i) => i.command).sort(), ['fileShake.clear', 'fileShake.toggle']);
-    for (const i of items) assert.equal(i.when, 'view == fileShake.view');
+  it('the commands that appear as buttons in a view title carry a codicon', () => {
+    const icon = (id: string): string | undefined => pkg.contributes.commands.find((c) => c.command === id)?.icon;
+    for (const id of ['fileShake.pause', 'fileShake.resume', 'fileShake.markAllReviewed', 'fileShake.openDashboardPanel']) assert.match(icon(id) ?? '', /^\$\([a-z-]+\)$/, id);
   });
 
-  it('no activation event is needed for contributed commands or the view (>= 1.74)', () => {
+  it('view title menus: the Explorer view keeps clear + toggle; the dashboard view gets pause/resume, mark all reviewed and open in editor', () => {
+    const items = pkg.contributes.menus['view/title'];
+    const explorer = items.filter((i) => i.when === 'view == fileShake.view').map((i) => i.command).sort();
+    assert.deepEqual(explorer, ['fileShake.clear', 'fileShake.toggle']);
+    const dash = items.filter((i) => i.when.includes('view == fileShake.dashboard'));
+    assert.deepEqual(dash.map((i) => i.command).sort(), ['fileShake.markAllReviewed', 'fileShake.openDashboardPanel', 'fileShake.pause', 'fileShake.resume']);
+    assert.equal(items.length, 6, 'nothing else is in a view title menu');
+    const whenOf = (id: string): string => must(items.find((i) => i.command === id)).when;
+    assert.equal(whenOf('fileShake.pause'), 'view == fileShake.dashboard && !fileShake.paused');
+    assert.equal(whenOf('fileShake.resume'), 'view == fileShake.dashboard && fileShake.paused');
+    for (const i of items) assert.match(i.group, /^navigation(@\d+)?$/);
+  });
+
+  it('the command palette only offers the one of pause / resume that makes sense, from the fileShake.paused context key', () => {
+    assert.deepEqual(pkg.contributes.menus.commandPalette, [
+      { command: 'fileShake.pause', when: '!fileShake.paused' },
+      { command: 'fileShake.resume', when: 'fileShake.paused' },
+    ]);
+  });
+
+  it('no activation event is needed for contributed commands or the views (>= 1.74)', () => {
     assert.ok(!pkg.activationEvents.some((e) => e.startsWith('onCommand') || e.startsWith('onView')));
   });
 });
@@ -215,9 +275,23 @@ describe('package.json: configuration matches core/config defaults and ranges', 
     'fileShake.detectExternalEdits': 'detectExternalEdits',
     'fileShake.maxFileSizeKb': 'maxFileSizeKb',
     'fileShake.showStatusBar': 'showStatusBar',
+    'fileShake.viewMode': 'viewMode',
+    'fileShake.animationIntensity': 'animationIntensity',
+    'fileShake.history.persist': 'historyPersist',
+    'fileShake.history.maxEvents': 'historyMaxEvents',
+    'fileShake.history.retentionDays': 'historyRetentionDays',
+    'fileShake.git.enabled': 'gitEnabled',
+    'fileShake.dependencies.index': 'dependencyIndex',
+    'fileShake.dependencies.maxFiles': 'dependencyMaxFiles',
+    'fileShake.collisions.notify': 'collisionsNotify',
+    'fileShake.sensitiveGlobs': 'sensitiveGlobs',
+    'fileShake.ai.mode': 'aiMode',
+    'fileShake.ai.provider': 'aiProvider',
+    'fileShake.experimental.agentSignals': 'agentSignals',
   };
 
-  it('exactly the documented 15 settings', () => {
+  it('exactly the documented 28 settings (the 15 of 0.2.0 and the 13 of DESIGN-0.3.0 section 12)', () => {
+    assert.equal(Object.keys(keyOf).length, 28);
     assert.deepEqual(Object.keys(props).sort(), Object.keys(keyOf).sort());
   });
 
@@ -236,6 +310,10 @@ describe('package.json: configuration matches core/config defaults and ranges', 
     ['fileShake.maxFiles', 'integer', 5, 200],
     ['fileShake.sensitivity', 'number', 0.25, 4],
     ['fileShake.maxFileSizeKb', 'integer', 16, 4096],
+    ['fileShake.animationIntensity', 'number', 0.25, 2],
+    ['fileShake.history.maxEvents', 'integer', 100, 5000],
+    ['fileShake.history.retentionDays', 'integer', 1, 90],
+    ['fileShake.dependencies.maxFiles', 'integer', 200, 20000],
   ];
   for (const [setting, type, min, max] of numeric) {
     it(`${setting}: ${type} in [${min}, ${max}], the same clamp range sanitizeConfig applies`, () => {
@@ -250,9 +328,53 @@ describe('package.json: configuration matches core/config defaults and ranges', 
   }
 
   it('boolean settings are booleans', () => {
-    for (const s of ['enable', 'enableAnimation', 'showWhenIdle', 'persistUntilNextFile', 'decorateFolders', 'detectExternalEdits', 'showStatusBar']) {
+    for (const s of ['enable', 'enableAnimation', 'showWhenIdle', 'persistUntilNextFile', 'decorateFolders', 'detectExternalEdits', 'showStatusBar', 'history.persist', 'git.enabled', 'collisions.notify', 'experimental.agentSignals']) {
       assert.equal(must(props[`fileShake.${s}`]).type, 'boolean', s);
     }
+  });
+
+  it('enum settings list exactly the values core/config accepts, and describe each of them', () => {
+    const enums: Array<[string, keyof FileShakeConfig, string[]]> = [
+      ['fileShake.viewMode', 'viewMode', ['live', 'compact', 'impact']],
+      ['fileShake.dependencies.index', 'dependencyIndex', ['onDemand', 'off']],
+      ['fileShake.ai.mode', 'aiMode', ['local', 'assisted']],
+    ];
+    for (const [setting, key, values] of enums) {
+      const p = must(props[setting], setting);
+      assert.equal(p.type, 'string');
+      assert.deepEqual(p.enum, values, setting);
+      assert.equal(p.enumDescriptions?.length, values.length, `${setting}: one description per value`);
+      for (const v of values) assert.equal(sanitizeConfig({ [key]: v })[key], v, `${setting} = ${v}`);
+      assert.equal(sanitizeConfig({ [key]: 'bogus' })[key], DEFAULT_CONFIG[key]);
+    }
+  });
+
+  it('fileShake.sensitiveGlobs: an array of strings whose default is the ten globs of DESIGN-0.3.0 section 12', () => {
+    const p = must(props['fileShake.sensitiveGlobs']);
+    assert.equal(p.type, 'array');
+    assert.deepEqual(p.items, { type: 'string' });
+    assert.deepEqual(p.default, ['**/.env*', '**/*.pem', '**/*.key', '**/*.pfx', '**/*.p12', '**/id_rsa*', '**/id_ed25519*', '**/secrets/**', '**/.npmrc', '**/.netrc']);
+  });
+
+  it('fileShake.ai.provider: the manifest pattern is the same rule as core/config (empty or a short opaque id)', () => {
+    const p = must(props['fileShake.ai.provider']);
+    assert.equal(p.type, 'string');
+    assert.equal(p.default, '');
+    const re = new RegExp(must(p.pattern));
+    for (const ok of ['', 'a', 'acme.llm', 'A1_b-c', 'a'.repeat(64)]) {
+      assert.ok(re.test(ok), `accepts ${JSON.stringify(ok)}`);
+      assert.equal(sanitizeConfig({ aiProvider: ok }).aiProvider, ok);
+    }
+    for (const bad of [' a', 'a b', '.a', '../x', 'a/b', 'a'.repeat(65)]) {
+      assert.ok(!re.test(bad), `rejects ${JSON.stringify(bad)}`);
+      assert.equal(sanitizeConfig({ aiProvider: bad }).aiProvider, '');
+    }
+  });
+
+  it('privacy defaults: AI is local, the agent signal file is off, history is kept per workspace only', () => {
+    assert.equal(must(props['fileShake.ai.mode']).default, 'local');
+    assert.equal(must(props['fileShake.experimental.agentSignals']).default, false);
+    for (const p of Object.values(props)) assert.equal(p.scope, 'window', 'no setting can be set per machine or per resource by accident');
   });
 
   it('excludeGlobs is an array of strings', () => {
@@ -291,10 +413,12 @@ describe('repository files required for a Marketplace-ready package', () => {
     assert.match(t, /Permission is hereby granted, free of charge/);
   });
 
-  it('CHANGELOG.md exists and mentions 0.2.0', () => {
+  it('CHANGELOG.md exists, mentions 0.3.0 first, and keeps the history', () => {
     const log = readFileSync(must_exist('CHANGELOG.md'), 'utf8');
-    assert.match(log, /^## 0\.2\.0$/m);
+    assert.match(log, /^## 0\.3\.0$/m);
+    assert.match(log, /^## 0\.2\.0$/m, 'the history is kept');
     assert.match(log, /^## 0\.1\.0$/m, 'the history is kept');
+    assert.ok(log.indexOf('## 0.3.0') < log.indexOf('## 0.2.0') && log.indexOf('## 0.2.0') < log.indexOf('## 0.1.0'), 'newest first');
   });
 
   it('.vscodeignore excludes everything and un-ignores exactly the shipped files', () => {
@@ -302,8 +426,12 @@ describe('repository files required for a Marketplace-ready package', () => {
     assert.equal(lines[0], '**');
     assert.deepEqual(
       lines.slice(1).sort(),
-      ['!LICENSE', '!CHANGELOG.md', '!README.md', '!dist/extension.js', '!dist/webview.js', '!media/**', '!package.json'].sort(),
+      ['!LICENSE', '!CHANGELOG.md', '!README.md', '!dist/extension.js', '!dist/webview.js', '!dist/dashboard.js', '!media/*', '!package.json'].sort(),
     );
+    // `!media/*` and not `!media/**`: with vsce an ignore line cannot override a matching `!` line, so `!media/**`
+    // would ship media/screenshots/ (recorded in the Dashboard Builder's Deviations)
+    assert.ok(!lines.includes('!media/**'));
+    assert.ok(!lines.some((l) => l.includes('screenshots')));
   });
 
   it('icon.png is a 128x128 RGBA PNG (checked from the file header)', () => {
@@ -317,8 +445,10 @@ describe('repository files required for a Marketplace-ready package', () => {
     assert.ok(buf.length < 40_000, `icon is ${buf.length} bytes`);
   });
 
-  it('media/webview.css exists; scripts/make-icon.mjs exists', () => {
+  it('media/webview.css, media/dashboard.css and media/activity.svg exist; scripts/make-icon.mjs exists', () => {
     must_exist('media/webview.css');
+    must_exist('media/dashboard.css');
+    must_exist('media/activity.svg');
     must_exist('scripts/make-icon.mjs');
   });
 
