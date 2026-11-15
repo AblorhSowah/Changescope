@@ -7,6 +7,7 @@ import {
   TEST_USER_SETTINGS,
   VARIANTS,
   copyFixtureTree,
+  MAX_TEMP_ROOT_CHARS,
   makeShortTempDir,
   prepareLayout,
   repoRoot,
@@ -109,7 +110,7 @@ describe('integration harness: temp dirs, fixtures, layouts', () => {
     const b = makeShortTempDir();
     try {
       assert.notEqual(a, b);
-      assert.ok(a.length < 40, `${a} is ${a.length} chars; the macOS socket path limit is ~104 for the whole <dir>/ud/<version>-main.sock path`);
+      assert.ok(a.length < MAX_TEMP_ROOT_CHARS, `${a} is ${a.length} chars; the limit is ${MAX_TEMP_ROOT_CHARS} (the macOS socket path limit is ~104 for the whole <dir>/ud/<version>-main.sock path; Windows has no such limit)`);
       assert.ok(existsSync(a));
       assert.equal(lstatSync(a).isSymbolicLink(), false);
     } finally {
@@ -157,7 +158,7 @@ describe('integration harness: temp dirs, fixtures, layouts', () => {
     try {
       assert.equal(layout.openArg, layout.env['FS_TEST_WORKSPACE']);
       assert.ok(existsSync(join(layout.openArg ?? '', 'a.ts')));
-      assert.ok(layout.root.length < 40);
+      assert.ok(layout.root.length < MAX_TEMP_ROOT_CHARS, `${layout.root} is ${layout.root.length} chars; the limit is ${MAX_TEMP_ROOT_CHARS}`);
       const settings = JSON.parse(readFileSync(join(layout.userDataDir, 'User', 'settings.json'), 'utf8')) as Record<string, unknown>;
       assert.deepEqual(settings, JSON.parse(JSON.stringify(TEST_USER_SETTINGS)));
       assert.equal(settings['files.autoSave'], 'off', 'autosave would make saves look like edits');

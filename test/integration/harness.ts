@@ -32,7 +32,15 @@ export function scrubEnv(env: NodeJS.ProcessEnv): string[] {
   return removed.sort();
 }
 
-/** Short, real (symlink-resolved) temp directory: macOS caps unix-socket paths at ~104 bytes. */
+/**
+ * Longest temp root (in characters) the harness accepts. On macOS and Linux VS Code listens on a unix socket under the temp root
+ * (<dir>/ud/<version>-main.sock) and macOS caps a socket path at ~104 bytes, so the root must stay under 40 characters.
+ * Windows uses named pipes, which have no such cap; there the limit that matters is MAX_PATH (260) for the deepest fixture path,
+ * and the runner's own temp directory (C:\Users\runneradmin\AppData\Local\Temp\fs-xxxxxx) is already 46 characters.
+ */
+export const MAX_TEMP_ROOT_CHARS = process.platform === 'win32' ? 100 : 40;
+
+/** Short, real (symlink-resolved) temp directory: macOS caps unix-socket paths at ~104 bytes (see MAX_TEMP_ROOT_CHARS). */
 export function makeShortTempDir(prefix = 'fs-'): string {
   const base = process.env['FS_TEST_TMP'] ?? (process.platform === 'win32' ? tmpdir() : '/tmp');
   return realpathSync(mkdtempSync(join(base, prefix)));

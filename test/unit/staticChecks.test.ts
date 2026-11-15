@@ -54,7 +54,8 @@ describe('static policy: src/core is pure (DESIGN 3.1 / 4)', () => {
 });
 
 describe('static policy: the webview bundle', () => {
-  const entries = webview.filter((f) => /\/(main|app)\.ts$/.test(f));
+  // listTsFiles returns native paths (backslashes on Windows): match on the normalised relative path
+  const entries = webview.filter((f) => /^src\/webview\/(main|app)\.ts$/.test(rel(f)));
 
   it('app.ts and main.ts exist', () => {
     assert.deepEqual(entries.map(rel).sort(), ['src/webview/app.ts', 'src/webview/main.ts']);

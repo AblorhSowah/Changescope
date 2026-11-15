@@ -1,0 +1,10 @@
+# Check text files out with LF on every platform, whatever core.autocrlf says.
+# The parser tests locate fixture lines with strings such as 'import indented_mod\n', and the
+# packaged files must not depend on who built them. Tests that need CRLF build it in the string.
+* text=auto eol=lf
+
+# Never touched by line-ending conversion.
+*.png binary
+*.vsix binary
+*.ico binary
+*.woff2 binary
