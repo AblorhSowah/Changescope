@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { EXT_ID, envPath, getApi, logFor, must, openDoc, resetConfig, resetState, setConfig, settleRefs, testing, trackedOf, typeAndWait, waitUntil } from './helpers';
 import { join } from 'node:path';
 import { normalizePath } from '../../../src/core/pathUtils';
 
 suite('Activation and registration (all launch variants)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
 
   suiteSetup(async function () {
     this.timeout(90_000);
@@ -25,11 +25,11 @@ suite('Activation and registration (all launch variants)', () => {
     await resetState(api);
   });
 
-  test('the extension is installed, active, and exports FileShakeApi v1 with the test seam', () => {
+  test('the extension is installed, active, and exports ChangescopeApi v1 with the test seam', () => {
     const ext = must(vscode.extensions.getExtension(EXT_ID), 'extension');
     assert.equal(ext.isActive, true);
     assert.equal(api.apiVersion, 1);
-    assert.ok(api.testing, 'FILE_SHAKE_TEST=1 must expose api.testing');
+    assert.ok(api.testing, 'CHANGESCOPE_TEST=1 must expose api.testing');
     assert.equal(typeof api.testing?.advance, 'function');
     assert.equal(typeof api.testing?.overrideFocus, 'function');
   });
@@ -37,13 +37,13 @@ suite('Activation and registration (all launch variants)', () => {
   test('package.json contributions reached VS Code: view, commands, colours', () => {
     const ext = must(vscode.extensions.getExtension(EXT_ID), 'extension');
     const c = (ext.packageJSON as { contributes: { views: { explorer: Array<{ id: string; type: string }> }; colors: Array<{ id: string }> } }).contributes;
-    assert.deepEqual(c.views.explorer.map((v) => `${v.type}:${v.id}`), ['webview:fileShake.view']);
-    assert.deepEqual(c.colors.map((x) => x.id).sort(), ['fileShake.editedForeground', 'fileShake.referencedForeground']);
+    assert.deepEqual(c.views.explorer.map((v) => `${v.type}:${v.id}`), ['webview:changescope.view']);
+    assert.deepEqual(c.colors.map((x) => x.id).sort(), ['changescope.editedForeground', 'changescope.referencedForeground']);
   });
 
   test('commands (and the auto-generated view focus command) are registered', async () => {
     const all = await vscode.commands.getCommands(true);
-    for (const id of ['fileShake.toggle', 'fileShake.clear', 'fileShake.focusView', 'fileShake.showDebugInfo', 'fileShake.view.focus']) {
+    for (const id of ['changescope.toggle', 'changescope.clear', 'changescope.focusView', 'changescope.showDebugInfo', 'changescope.view.focus']) {
       assert.ok(all.includes(id), `${id} is not registered`);
     }
   });
@@ -58,11 +58,11 @@ suite('Activation and registration (all launch variants)', () => {
     assert.deepEqual(api.getRows(), []);
     assert.deepEqual(api.getTracked(), []);
     assert.equal(api.isEnabled(), true);
-    assert.equal(api.getStatusText(), '$(pulse) File Shake');
+    assert.equal(api.getStatusText(), '$(pulse) Changescope');
   });
 
   test('VS Code serves the documented setting defaults', () => {
-    const cfg = vscode.workspace.getConfiguration('fileShake');
+    const cfg = vscode.workspace.getConfiguration('changescope');
     assert.equal(cfg.get('enable'), true);
     assert.equal(cfg.get('enableAnimation'), true);
     assert.equal(cfg.get('idleTimeoutMs'), 2500);
@@ -93,9 +93,9 @@ suite('Activation and registration (all launch variants)', () => {
     assert.deepEqual(logFor(api, (e) => e.key === key && e.decision !== 'ignore'), []);
   });
 
-  test('fileShake.focusView resolves the webview view and it posts ready', async function () {
+  test('changescope.focusView resolves the webview view and it posts ready', async function () {
     this.timeout(90_000);
-    await vscode.commands.executeCommand('fileShake.focusView');
+    await vscode.commands.executeCommand('changescope.focusView');
     await waitUntil(api, () => testing(api).viewStats().resolved >= 1, 'the webview view to be resolved', 60_000);
     await waitUntil(api, () => testing(api).viewStats().ready >= 1, 'the webview to post {type:"ready"}', 60_000);
     const stats = testing(api).viewStats();
@@ -103,14 +103,14 @@ suite('Activation and registration (all launch variants)', () => {
     assert.equal(stats.visible, true);
   });
 
-  test('fileShake.showDebugInfo writes the documented JSON to the "File Shake" output channel', async function () {
+  test('changescope.showDebugInfo writes the documented JSON to the "Changescope" output channel', async function () {
     this.timeout(60_000);
     // put something in the model so the dump has content
     await typeAndWait(api, await openDoc(join(envPath('FS_TEST_OUTSIDE'), 'o1.ts')));
-    await vscode.commands.executeCommand('fileShake.showDebugInfo');
+    await vscode.commands.executeCommand('changescope.showDebugInfo');
     const readDump = (): Record<string, unknown> | undefined => {
       for (const d of vscode.workspace.textDocuments) {
-        if (d.uri.scheme !== 'output' || !d.uri.toString().includes('file-shake')) continue;
+        if (d.uri.scheme !== 'output' || !d.uri.toString().includes('changescope')) continue;
         try {
           const j = JSON.parse(d.getText()) as Record<string, unknown>;
           if ('extensionVersion' in j) return j;
@@ -121,7 +121,7 @@ suite('Activation and registration (all launch variants)', () => {
       return undefined;
     };
     // the Output channel document appears asynchronously after `show()`
-    await waitUntil(api, () => readDump() !== undefined, 'the File Shake output channel to contain the debug JSON', 30_000);
+    await waitUntil(api, () => readDump() !== undefined, 'the Changescope output channel to contain the debug JSON', 30_000);
     const dump = must(readDump());
     for (const k of ['extensionVersion', 'vscodeVersion', 'config', 'roots', 'enabled', 'viewVisible', 'seq', 'tracked', 'rows', 'references', 'recentEvents']) {
       assert.ok(k in dump, `debug info lacks ${k}`);
@@ -138,21 +138,21 @@ suite('Activation and registration (all launch variants)', () => {
     assert.ok(Array.isArray(cfg['excludeGlobs']));
   });
 
-  test('fileShake.toggle flips fileShake.enable and the model follows, in both directions', async function () {
+  test('changescope.toggle flips changescope.enable and the model follows, in both directions', async function () {
     this.timeout(60_000);
-    await vscode.commands.executeCommand('fileShake.toggle');
+    await vscode.commands.executeCommand('changescope.toggle');
     await waitUntil(api, () => !api.isEnabled(), 'the extension to report disabled');
     assert.equal(api.getSnapshot().enabled, false);
-    assert.equal(api.getStatusText(), '$(circle-slash) File Shake: off');
+    assert.equal(api.getStatusText(), '$(circle-slash) Changescope: off');
     assert.deepEqual(api.getRows(), []);
-    await vscode.commands.executeCommand('fileShake.toggle');
+    await vscode.commands.executeCommand('changescope.toggle');
     await waitUntil(api, () => api.isEnabled(), 'the extension to report enabled again');
     assert.equal(api.getSnapshot().enabled, true);
-    assert.equal(api.getStatusText(), '$(pulse) File Shake');
+    assert.equal(api.getStatusText(), '$(pulse) Changescope');
   });
 
-  test('fileShake.clear is safe on an empty model', async () => {
-    await vscode.commands.executeCommand('fileShake.clear');
+  test('changescope.clear is safe on an empty model', async () => {
+    await vscode.commands.executeCommand('changescope.clear');
     assert.deepEqual(api.getRows(), []);
   });
 

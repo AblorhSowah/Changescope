@@ -7,28 +7,28 @@ import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import type { LogEntry, TrackedFile, ViewRow } from '../../../src/core/types';
 import { normalizePath } from '../../../src/core/pathUtils';
 import { K } from '../../../src/core/constants';
 
-export const EXT_ID = 'file-shake.file-shake';
-export type TestingApi = NonNullable<FileShakeApi['testing']>;
+export const EXT_ID = 'changescope.changescope';
+export type TestingApi = NonNullable<ChangescopeApi['testing']>;
 
-let cachedApi: FileShakeApi | undefined;
+let cachedApi: ChangescopeApi | undefined;
 
-export async function getApi(): Promise<FileShakeApi> {
+export async function getApi(): Promise<ChangescopeApi> {
   if (cachedApi) return cachedApi;
-  const ext = vscode.extensions.getExtension<FileShakeApi>(EXT_ID);
+  const ext = vscode.extensions.getExtension<ChangescopeApi>(EXT_ID);
   if (!ext) throw new Error(`extension ${EXT_ID} is not installed in the test host`);
   const api = await ext.activate();
-  if (!api || api.apiVersion !== 1) throw new Error('extension did not return the FileShakeApi');
+  if (!api || api.apiVersion !== 1) throw new Error('extension did not return the ChangescopeApi');
   cachedApi = api;
   return api;
 }
 
-export function testing(api: FileShakeApi): TestingApi {
-  if (!api.testing) throw new Error('api.testing is undefined: FILE_SHAKE_TEST=1 must be set in the launch environment');
+export function testing(api: ChangescopeApi): TestingApi {
+  if (!api.testing) throw new Error('api.testing is undefined: CHANGESCOPE_TEST=1 must be set in the launch environment');
   return api.testing;
 }
 
@@ -43,7 +43,7 @@ export function envPath(name: string): string {
 
 export const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-function nextUpdate(api: FileShakeApi): Promise<void> {
+function nextUpdate(api: ChangescopeApi): Promise<void> {
   return new Promise<void>((resolve) => {
     const sub = api.onDidUpdate(() => {
       sub.dispose();
@@ -57,7 +57,7 @@ function nextUpdate(api: FileShakeApi): Promise<void> {
  * then waits for the next model update or a short real-time tick, so real file-watcher latency is tolerated
  * without a fixed sleep. Throws with `what` on timeout.
  */
-export async function waitUntil(api: FileShakeApi, cond: () => boolean, what: string, timeoutMs = 30_000): Promise<void> {
+export async function waitUntil(api: ChangescopeApi, cond: () => boolean, what: string, timeoutMs = 30_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     testing(api).advance(0);
@@ -72,7 +72,7 @@ export async function waitUntil(api: FileShakeApi, cond: () => boolean, what: st
  * debounce while we are waiting (the fake scheduler only fires it when advanced), so wait in bounded slices and
  * advance again if the service is not idle yet.
  */
-export async function settleRefs(api: FileShakeApi): Promise<void> {
+export async function settleRefs(api: ChangescopeApi): Promise<void> {
   const t = testing(api);
   for (let i = 0; i < 20; i++) {
     t.advance(K.REF_DEBOUNCE_MS + 1);
@@ -82,9 +82,9 @@ export async function settleRefs(api: FileShakeApi): Promise<void> {
   t.advance(0);
 }
 
-export const rowOf = (api: FileShakeApi, key: string): ViewRow | undefined => api.getRows().find((r) => r.id === key);
-export const trackedOf = (api: FileShakeApi, key: string): TrackedFile | undefined => api.getTracked().find((t) => t.key === key);
-export const logFor = (api: FileShakeApi, pred: (e: LogEntry) => boolean): LogEntry[] => api.getEventLog().filter(pred);
+export const rowOf = (api: ChangescopeApi, key: string): ViewRow | undefined => api.getRows().find((r) => r.id === key);
+export const trackedOf = (api: ChangescopeApi, key: string): TrackedFile | undefined => api.getTracked().find((t) => t.key === key);
+export const logFor = (api: ChangescopeApi, pred: (e: LogEntry) => boolean): LogEntry[] => api.getEventLog().filter(pred);
 
 export function uriOfKey(fsPath: string): vscode.Uri {
   return vscode.Uri.file(fsPath);
@@ -113,25 +113,25 @@ export async function revertDirtyDocuments(): Promise<void> {
 }
 
 /** Puts the extension, the editors and the fake clock back to a neutral state between tests. */
-export async function resetState(api: FileShakeApi): Promise<void> {
+export async function resetState(api: ChangescopeApi): Promise<void> {
   await revertDirtyDocuments();
   await vscode.commands.executeCommand('workbench.action.closeAllEditors');
   testing(api).overrideFocus(undefined);
-  await vscode.commands.executeCommand('fileShake.clear');
+  await vscode.commands.executeCommand('changescope.clear');
   testing(api).advance(60_000);
   await api.whenReferencesIdle();
   testing(api).advance(0);
 }
 
 export async function setConfig(name: string, value: unknown): Promise<void> {
-  await vscode.workspace.getConfiguration('fileShake').update(name, value, vscode.ConfigurationTarget.Global);
+  await vscode.workspace.getConfiguration('changescope').update(name, value, vscode.ConfigurationTarget.Global);
 }
 
 export async function resetConfig(): Promise<void> {
   const ext = vscode.extensions.getExtension(EXT_ID);
   const pkg = ext?.packageJSON as { contributes?: { configuration?: { properties?: Record<string, unknown> } } } | undefined;
-  const names = Object.keys(pkg?.contributes?.configuration?.properties ?? {}).map((k) => k.replace(/^fileShake\./, ''));
-  const cfg = vscode.workspace.getConfiguration('fileShake');
+  const names = Object.keys(pkg?.contributes?.configuration?.properties ?? {}).map((k) => k.replace(/^changescope\./, ''));
+  const cfg = vscode.workspace.getConfiguration('changescope');
   for (const n of names) {
     if (cfg.inspect(n)?.globalValue !== undefined) await cfg.update(n, undefined, vscode.ConfigurationTarget.Global);
   }
@@ -162,7 +162,7 @@ export function workspaceDir(): string {
   return envPath('FS_TEST_WORKSPACE');
 }
 
-export function decorationOf(api: FileShakeApi, fsPath: string): vscode.FileDecoration | undefined {
+export function decorationOf(api: ChangescopeApi, fsPath: string): vscode.FileDecoration | undefined {
   return api.getDecoration(vscode.Uri.file(fsPath));
 }
 
@@ -180,7 +180,7 @@ export function must<T>(value: T | undefined | null, what = 'value'): T {
  * Like waitUntil, but moves the fake clock forward by `stepMs` each round (for flows that depend on timers,
  * e.g. the short settle delay for a clean-after-change document event).
  */
-export async function waitUntilAdvancing(api: FileShakeApi, stepMs: number, cond: () => boolean, what: string, timeoutMs = 30_000): Promise<void> {
+export async function waitUntilAdvancing(api: ChangescopeApi, stepMs: number, cond: () => boolean, what: string, timeoutMs = 30_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     testing(api).advance(stepMs);
@@ -195,7 +195,7 @@ export async function waitUntilAdvancing(api: FileShakeApi, stepMs: number, cond
  * returning, so the fake clock can safely be advanced afterwards. VS Code reports the first edit of a clean
  * document and its dirty-state change as two events; waiting here keeps the fake clock from racing them.
  */
-export async function typeAndWait(api: FileShakeApi, doc: vscode.TextDocument, text = ' '): Promise<TrackedFile> {
+export async function typeAndWait(api: ChangescopeApi, doc: vscode.TextDocument, text = ' '): Promise<TrackedFile> {
   const key = keyOf(doc.uri.fsPath);
   const before = trackedOf(api, key)?.editCount ?? 0;
   await typeInto(doc, text);
@@ -228,7 +228,7 @@ export function externalWrite(file: string, content: string): Promise<void> {
  * Creates files on disk, waits until the watcher has reported all of them, then resets the model, so the test starts
  * with files that exist but are not "recently edited" (otherwise green would win over yellow).
  */
-export async function createSettled(api: FileShakeApi, base: string, files: Record<string, string>): Promise<Record<string, string>> {
+export async function createSettled(api: ChangescopeApi, base: string, files: Record<string, string>): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const [rel, content] of Object.entries(files)) out[rel] = writeFile(base, rel, content);
   const keys = Object.values(out).map(keyOf);

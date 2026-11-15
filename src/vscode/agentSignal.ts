@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { SIGNAL_FILE_NAME, SIGNAL_LIMITS, SignalChunker, buildAgentHook, signalPrefixKept, signalTail } from '../core/ai/agentSignal';
 import type { AgentAdapter, AgentSignal } from '../core/ai/agentSignal';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 
 /** `reportAgentActivity` on the extension API: always listening, nothing to configure. */
 export class ApiAgentAdapter implements AgentAdapter {
@@ -24,14 +24,14 @@ export class ApiAgentAdapter implements AgentAdapter {
 export interface SignalFileDeps {
   /** per-workspace storage folder of the extension; undefined without a workspace */
   storageUri: vscode.Uri | undefined;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   onSignal(signal: AgentSignal): void;
   log(msg: string): void;
 }
 
 /**
  * Experimental: reads agent writes from a JSON Lines file that a hook configured by the user appends to.
- * File Shake only reads it (and empties it when it grows past 1 MB). Off by default.
+ * Changescope only reads it (and empties it when it grows past 1 MB). Off by default.
  */
 export class SignalFileAdapter implements AgentAdapter {
   readonly id = 'signal-file';
@@ -65,7 +65,7 @@ export class SignalFileAdapter implements AgentAdapter {
   }
 
   detail(): string {
-    if (!this.deps.getConfig().agentSignals) return 'Off. Turn on fileShake.experimental.agentSignals to read the signal file.';
+    if (!this.deps.getConfig().agentSignals) return 'Off. Turn on changescope.experimental.agentSignals to read the signal file.';
     if (this.deps.storageUri === undefined) return 'Unavailable: this window has no workspace storage (open a folder).';
     if (this.lastError !== '') return `Unavailable: ${this.lastError}`;
     return this.active ? 'Reading the signal file written by a hook you configured.' : 'Starting.';
@@ -116,7 +116,7 @@ export class SignalFileAdapter implements AgentAdapter {
     this.active = true;
     try {
       await vscode.workspace.fs.createDirectory(dir);
-      // what is already in the file happened before File Shake started listening
+      // what is already in the file happened before Changescope started listening
       this.forget();
       try {
         const stat = await vscode.workspace.fs.stat(uri);
@@ -185,7 +185,7 @@ export class SignalFileAdapter implements AgentAdapter {
         this.mtime = stat.mtime;
         for (const signal of parsed.signals) this.deps.onSignal(signal);
         if (this.offset > SIGNAL_LIMITS.FILE) {
-          // File Shake owns the size of this file: empty it once it is too big
+          // Changescope owns the size of this file: empty it once it is too big
           try {
             await vscode.workspace.fs.writeFile(uri, new Uint8Array());
             this.forget();

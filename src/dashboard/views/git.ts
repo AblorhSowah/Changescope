@@ -19,7 +19,7 @@ export function gitNotice(s: DashboardState): { text: string; tone: 'info' | 'wa
   const detail = s.git.detail.trim();
   switch (s.git.state) {
     case 'disabled':
-      return { text: detail === '' ? 'Git integration is turned off (fileShake.git.enabled).' : `Git integration is turned off. ${detail}`, tone: 'info' };
+      return { text: detail === '' ? 'Git integration is turned off (changescope.git.enabled).' : `Git integration is turned off. ${detail}`, tone: 'info' };
     case 'unavailable':
       return { text: detail === '' ? 'Git is unavailable.' : `Git is unavailable: ${detail}`, tone: 'warning' };
     case 'loading':

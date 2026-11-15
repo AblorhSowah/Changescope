@@ -3,14 +3,14 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { createSettled, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, removePath, runNode, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir } from './helpers';
 import { activeSession, dashboardState, eventsFor, externalChange, lastEventFor, occurrences, resetAll, resetHistory, run, send } from './helpers030';
 
 const DAY = 24 * 60 * 60 * 1000;
 
 suite('0.3.0 activity history, sessions and persistence (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -37,7 +37,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
   };
   const sessionReportText = async (id: string): Promise<string> => {
     const before = new Set(vscode.workspace.textDocuments);
-    await run('fileShake.exportSessionReport', id);
+    await run('changescope.exportSessionReport', id);
     await waitUntil(api, () => vscode.workspace.textDocuments.some((d) => !before.has(d) && d.languageId === 'markdown'), 'the report document to open', 20_000);
     return must(vscode.workspace.textDocuments.find((d) => !before.has(d) && d.languageId === 'markdown')).getText();
   };
@@ -130,7 +130,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
       await externalChange(api, a, 'export const a = 3;\n');
       assert.equal(dashboardState(api).files.find((f) => f.id === keyOf(a))?.review, 'unreviewed', 'a change after the review needs a new review');
       assert.equal(dashboardState(api).overview.unreviewed, 2);
-      await run('fileShake.markAllReviewed');
+      await run('changescope.markAllReviewed');
       assert.equal(dashboardState(api).overview.unreviewed, 0);
     });
   });
@@ -144,7 +144,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
       await typeAndWait(api, doc);
       const rowsBefore = api.getRows().length;
       const eventsBefore = api.getActivityEvents().length;
-      await run('fileShake.pause');
+      await run('changescope.pause');
       assert.equal(dashboardState(api).settings.paused, true);
       const loggedBefore = logFor(api, (e) => e.reason === 'paused').length;
       await typeInto(doc, ' ');
@@ -152,7 +152,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
       assert.equal(api.getActivityEvents().length, eventsBefore, 'no event while paused');
       assert.equal(occurrences(api, key), 1);
       assert.equal(api.getRows().length, rowsBefore, 'rows already on screen stay');
-      await run('fileShake.resume');
+      await run('changescope.resume');
       assert.equal(dashboardState(api).settings.paused, false);
       await typeAndWait(api, doc);
       assert.equal(occurrences(api, key), 2, 'recording is back');
@@ -161,9 +161,9 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
     test('the dashboard message and the two commands drive the same flag', async () => {
       send(api, { type: 'setPaused', value: true });
       assert.equal(dashboardState(api).settings.paused, true);
-      await run('fileShake.resume');
+      await run('changescope.resume');
       assert.equal(dashboardState(api).settings.paused, false);
-      await run('fileShake.pause');
+      await run('changescope.pause');
       assert.equal(dashboardState(api).settings.paused, true);
       send(api, { type: 'setPaused', value: false });
       assert.equal(dashboardState(api).settings.paused, false);
@@ -177,10 +177,10 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
       const loggedBefore = logFor(api, (e) => e.reason === 'paused').length;
       let running = 0;
       for (let i = 0; i < 12; i += 1) {
-        await run('fileShake.pause');
+        await run('changescope.pause');
         await typeInto(doc, ' ');
         await waitUntil(api, () => logFor(api, (e) => e.reason === 'paused').length >= loggedBefore + i + 1, `paused edit ${i + 1} to be logged`, 30_000);
-        await run('fileShake.resume');
+        await run('changescope.resume');
         await typeAndWait(api, doc);
         running += 1;
         assert.equal(occurrences(api, key), running, `after round ${i + 1}`);
@@ -255,7 +255,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
       const id = must(activeSession(api)).id;
       send(api, { type: 'sessionStop' });
       const text = await sessionReportText(id);
-      assert.match(text, /^# File Shake session report: Report session/);
+      assert.match(text, /^# Changescope session report: Report session/);
       assert.match(text, /- Status: completed/);
       assert.match(text, /report-target\.ts/);
       assert.match(text, /\| External \| 1 \|/);
@@ -425,7 +425,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
         asked.push(`${message} | ${action}`);
         return Promise.resolve(false);
       });
-      await run('fileShake.clearHistory');
+      await run('changescope.clearHistory');
       assert.equal(asked.length, 1);
       assert.match(asked[0] ?? '', /Clear/);
       assert.ok(api.getActivityEvents().length > 0, 'declined: nothing cleared');

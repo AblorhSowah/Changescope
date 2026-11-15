@@ -659,7 +659,7 @@ describe('dashboard: live region announcements', () => {
     assert.equal(textOf(live), 'Dependency index ready: 100 files.');
   });
 
-  it('session start and stop, Git becoming unavailable, File Shake on/off and a new summary are announced', () => {
+  it('session start and stop, Git becoming unavailable, Changescope on/off and a new summary are announced', () => {
     const d = mount();
     const live = d.q('.fd-live');
     const say = (o: Parameters<typeof dashState>[0], seq: number): string => {
@@ -671,8 +671,8 @@ describe('dashboard: live region announcements', () => {
     assert.equal(say({ sessions: { active: dashSession('s1', 'Work') } }, 2), 'Session started: Work.');
     assert.equal(say({}, 3), 'Session stopped.');
     assert.equal(say({ git: { state: 'unavailable', detail: 'x' } }, 4), 'Git is unavailable.');
-    assert.equal(say({ enabled: false }, 5), 'File Shake is off.');
-    assert.equal(say({ enabled: true }, 6), 'File Shake is on.');
+    assert.equal(say({ enabled: false }, 5), 'Changescope is off.');
+    assert.equal(say({ enabled: true }, 6), 'Changescope is on.');
     assert.equal(say({ summary: { text: 't', provider: 'local', at: 5 } }, 7), 'Summary updated.');
   });
 });

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { K } from '../core/constants';
 import { createExcludeMatcher, relativeForMatch } from '../core/glob';
 import { dirname, isUnder } from '../core/pathUtils';
@@ -12,7 +12,7 @@ const CACHE_LIMIT = 50;
 export interface ReferenceServiceDeps {
   scheduler: Scheduler;
   clock: Clock;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   log(msg: string): void;
 }
@@ -210,7 +210,7 @@ export class ReferenceService implements vscode.Disposable {
     }
   }
 
-  private excludeFn(cfg: FileShakeConfig, roots: readonly WorkspaceRoot[]): (key: FileKey) => boolean {
+  private excludeFn(cfg: ChangescopeConfig, roots: readonly WorkspaceRoot[]): (key: FileKey) => boolean {
     const id = JSON.stringify(cfg.excludeGlobs);
     if (this.matcher?.key !== id) {
       this.matcher = { key: id, fn: createExcludeMatcher(cfg.excludeGlobs, { nocase: process.platform === 'win32' }) };
@@ -220,7 +220,7 @@ export class ReferenceService implements vscode.Disposable {
   }
 
   /** Sensitive sources are never read (case-insensitive on every platform: matching too much is the safe error). */
-  private isSensitive(key: FileKey, cfg: FileShakeConfig, roots: readonly WorkspaceRoot[]): boolean {
+  private isSensitive(key: FileKey, cfg: ChangescopeConfig, roots: readonly WorkspaceRoot[]): boolean {
     const id = JSON.stringify(cfg.sensitiveGlobs);
     if (this.sensitive?.key !== id) this.sensitive = { key: id, fn: createExcludeMatcher(cfg.sensitiveGlobs, { nocase: true }) };
     return this.sensitive.fn(relativeForMatch(key, roots));

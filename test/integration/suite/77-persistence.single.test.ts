@@ -3,7 +3,7 @@
 // minute" costs nothing.
 import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import {
   createSettled,
   decorationOf,
@@ -28,7 +28,7 @@ import {
 } from './helpers';
 
 suite('Persistence and the two users (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -70,7 +70,7 @@ suite('Persistence and the two users (single-root workspace)', () => {
   const gone = (key: string, what: string): Promise<void> => waitUntil(api, () => rowOf(api, key) === undefined, what, 30_000);
 
   test('the setting is on by default', () => {
-    assert.equal(vscode.workspace.getConfiguration('fileShake').get('persistUntilNextFile'), true);
+    assert.equal(vscode.workspace.getConfiguration('changescope').get('persistUntilNextFile'), true);
   });
 
   test('YOU: the file you typed in stays on screen, idle and not shaking, with its yellow references, long after you stop', async function () {
@@ -164,7 +164,7 @@ suite('Persistence and the two users (single-root workspace)', () => {
     assert.equal(rowOf(api, keyOf(a))?.actor, 'you', 'typing again shows the file again');
   });
 
-  test('YOU: clicking a row in the File Shake view is not "moving on"; opening a file any other way is', async function () {
+  test('YOU: clicking a row in the Changescope view is not "moving on"; opening a file any other way is', async function () {
     this.timeout(90_000);
     const made = await createSettled(api, scratch('view-click'), files);
     const a = keyOf(must(made['a.ts']));

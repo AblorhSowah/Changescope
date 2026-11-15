@@ -1,4 +1,4 @@
-/* File Shake dashboard. Every colour, font and border comes from a VS Code theme variable; the fallbacks
+/* Changescope dashboard. Every colour, font and border comes from a VS Code theme variable; the fallbacks
    (system colours) only matter when the page is opened outside VS Code. Source colours are never the only
    cue: each source also has its own icon shape and a text label. */
 
@@ -24,7 +24,7 @@ body {
   --fd-focus: var(--vscode-focusBorder, #007fd4);
   --fd-link: var(--vscode-textLink-foreground, #3794ff);
 
-  --fd-src-developer: var(--vscode-fileShake-editedForeground, #3fb950);
+  --fd-src-developer: var(--vscode-changescope-editedForeground, #3fb950);
   --fd-src-ai-agent: var(--vscode-charts-blue, #3794ff);
   --fd-src-external: var(--vscode-charts-yellow, #cca700);
   --fd-src-git: var(--vscode-charts-purple, #b180d7);

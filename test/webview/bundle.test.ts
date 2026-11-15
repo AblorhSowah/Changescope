@@ -37,7 +37,7 @@ function load(initialState?: unknown): Page {
     nonce: 'n'.repeat(32),
     scriptUri: 'vscode-resource:/dist/webview.js',
     styleUri: 'vscode-resource:/media/webview.css',
-    title: 'File Shake',
+    title: 'Changescope',
   });
   // Scripts from the document are not fetched (resources: undefined); the bundle is evaluated by hand below.
   const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true });

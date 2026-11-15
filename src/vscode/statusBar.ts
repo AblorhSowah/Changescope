@@ -6,8 +6,8 @@ export class StatusBar implements vscode.Disposable {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
-    this.item.name = 'File Shake';
-    this.item.command = 'fileShake.focusView';
+    this.item.name = 'Changescope';
+    this.item.command = 'changescope.focusView';
   }
 
   update(status: { text: string; tooltip: string }, visible: boolean): void {

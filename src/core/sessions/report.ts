@@ -90,7 +90,7 @@ export function buildSessionReport(
   }
 
   const out: string[] = [];
-  out.push(`# File Shake session report: ${cell(s.title)}`, '');
+  out.push(`# Changescope session report: ${cell(s.title)}`, '');
   out.push(`- Status: ${s.status}`);
   out.push(`- Started: ${formatLocalMinute(s.startedAt)} (local time)`);
   out.push(`- Ended: ${s.endedAt === undefined ? 'still running' : `${formatLocalMinute(s.endedAt)} (local time)`}`);
@@ -120,7 +120,7 @@ export function buildSessionReport(
     '',
     '---',
     '',
-    'Sources are how File Shake classified each change from the way it arrived, not proof of who made it. ' +
+    'Sources are how Changescope classified each change from the way it arrived, not proof of who made it. ' +
       'Changes written by a tool or an agent show as External unless an adapter reported them. ' +
       'This report contains paths and counts only, no file contents.',
     '',

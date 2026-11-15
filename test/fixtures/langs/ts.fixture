@@ -1,4 +1,4 @@
-// File Shake parser fixture: TypeScript. Specifiers './p-*' are positives; './neg-*' must never be reported.
+// Changescope parser fixture: TypeScript. Specifiers './p-*' are positives; './neg-*' must never be reported.
 import Dflt from './p-default';
 import Dflt2, { a1, b1 as c1, type T1 } from './p-mixed';
 import * as ns from './p-namespace';

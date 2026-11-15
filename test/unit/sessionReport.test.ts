@@ -61,7 +61,7 @@ describe('buildSessionReport: Markdown', () => {
   const md = buildSessionReport(session(), events(), display, 'markdown');
 
   it('has the title, status, times, duration, git at start and end, counts', () => {
-    assert.match(md, /^# File Shake session report: Refactor\n/);
+    assert.match(md, /^# Changescope session report: Refactor\n/);
     assert.match(md, /- Status: completed/);
     assert.ok(md.includes(`- Started: ${formatLocalMinute(T0)} (local time)`));
     assert.ok(md.includes(`- Ended: ${formatLocalMinute(T0 + 95 * MIN)} (local time)`));

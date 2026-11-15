@@ -1,5 +1,7 @@
 # File Shake — Design Contract (v1)
 
+> Historical document (0.1.0). The product was renamed **Changescope** in 0.3.0; this file keeps the original names and ids (`fileShake.*`).
+
 Source of truth for Builder and Tester. `BRIEF.md` is the product intent; **this file wins** where they differ (see §2). Builder deviations go in `## 15. Persistence and the two users (0.2.0)
 
 Requirement (from the owner): a row must not disappear while its user is still "on" that file; "you" (typing) and "external" (Claude, git, tools) are shown as two different users; files touched at the same time are all shown; the existing green/yellow/shake logic stays.

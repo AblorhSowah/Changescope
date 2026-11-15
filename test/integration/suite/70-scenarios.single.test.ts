@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { K } from '../../../src/core/constants';
 import { referenceIntensity } from '../../../src/core/intensity';
 import {
@@ -34,7 +34,7 @@ import {
 } from './helpers';
 
 suite('Real-world scenarios (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -250,9 +250,9 @@ suite('Real-world scenarios (single-root workspace)', () => {
     await waitUntil(api, () => trackedOf(api, keyOf(later)) !== undefined, 'the extension to recover after the flood', 60_000);
   });
 
-  test('(g) toggling fileShake.enable while the view is open: the view gets the disabled and the enabled snapshot', async function () {
+  test('(g) toggling changescope.enable while the view is open: the view gets the disabled and the enabled snapshot', async function () {
     this.timeout(120_000);
-    await vscode.commands.executeCommand('fileShake.view.focus');
+    await vscode.commands.executeCommand('changescope.view.focus');
     await waitUntil(api, () => testing(api).viewStats().ready >= 1, 'the view to be ready', 90_000);
     const a = join(ws, 'a.ts');
     await typeAndWait(api, await openDoc(a));

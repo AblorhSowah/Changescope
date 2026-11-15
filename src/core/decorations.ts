@@ -1,6 +1,6 @@
 import type { DecorationSpec, FileKey, ViewRow } from './types';
 
-const PREFIX = 'File Shake: ';
+const PREFIX = 'Changescope: ';
 
 /** Native Explorer decorations: only rows that are active (any phase when showWhenIdle). */
 export function buildDecorations(
@@ -17,7 +17,7 @@ export function buildDecorations(
         // No edit count here: the decoration must only change on state transitions, not per keystroke.
         badge: you ? '●' : '◆',
         tooltip: `${PREFIX}${you ? 'Edited by you (typing)' : 'Changed outside the editor (external)'}`,
-        colorId: 'fileShake.editedForeground',
+        colorId: 'changescope.editedForeground',
         propagate: o.decorateFolders,
       });
     } else {
@@ -25,7 +25,7 @@ export function buildDecorations(
         role: 'referenced',
         badge: row.refCount <= 9 ? String(Math.max(0, Math.floor(row.refCount))) : '9+',
         tooltip: `${PREFIX}${row.tooltip}`,
-        colorId: 'fileShake.referencedForeground',
+        colorId: 'changescope.referencedForeground',
         propagate: o.decorateFolders,
       });
     }

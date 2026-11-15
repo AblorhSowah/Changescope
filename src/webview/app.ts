@@ -31,7 +31,7 @@ export interface App {
 }
 
 const EMPTY_TEXT = 'No files are being edited. Type in a file, or let a tool change one, and it will show up here under "You" or "External".';
-const DISABLED_TEXT = "File Shake is turned off. Use the toggle in this view's title bar to turn it back on.";
+const DISABLED_TEXT = "Changescope is turned off. Use the toggle in this view's title bar to turn it back on.";
 
 function defaultEnv(doc: Document): AppEnv {
   const win = doc.defaultView;
@@ -82,7 +82,7 @@ function cleanState(raw: PersistedState | undefined): Set<string> {
   return out;
 }
 
-/** Mounts the File Shake tree into `root`. Has no side effects at import time. */
+/** Mounts the Changescope tree into `root`. Has no side effects at import time. */
 export function mountApp(root: HTMLElement, host: HostApi, envOverride: Partial<AppEnv> = {}): App {
   const doc = root.ownerDocument;
   const env: AppEnv = { ...defaultEnv(doc), ...envOverride };

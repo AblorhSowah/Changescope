@@ -5,7 +5,7 @@ import type { HostMessage } from '../core/protocol';
 import type { Snapshot } from '../core/types';
 
 export class ShakeViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
-  static readonly viewType = 'fileShake.view';
+  static readonly viewType = 'changescope.view';
 
   /** called with the file key just before a row of this view is opened in an editor */
   onOpenRow: ((id: string) => void) | undefined;
@@ -35,7 +35,7 @@ export class ShakeViewProvider implements vscode.WebviewViewProvider, vscode.Dis
       nonce: makeNonce((n) => randomBytes(n)),
       scriptUri: view.webview.asWebviewUri(vscode.Uri.joinPath(dist, 'webview.js')).toString(),
       styleUri: view.webview.asWebviewUri(vscode.Uri.joinPath(media, 'webview.css')).toString(),
-      title: 'File Shake',
+      title: 'Changescope',
     });
 
     this.viewDisposables.push(

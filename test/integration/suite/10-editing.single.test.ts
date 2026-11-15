@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { K } from '../../../src/core/constants';
 import { referenceIntensity } from '../../../src/core/intensity';
 import { colorIdOf, decorationOf, envPath, getApi, keyOf, logFor, must, openDoc, resetConfig, resetState, rowOf, setConfig, settleRefs, testing, trackedOf, typeAndWait, typeInto, waitUntil, workspaceDir } from './helpers';
 
 suite('Editing a file (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const p = (rel: string): string => join(ws, rel);
 
@@ -51,13 +51,13 @@ suite('Editing a file (single-root workspace)', () => {
     assert.ok(logFor(api, (e) => e.key === keyOf(a) && e.origin === 'doc' && e.decision === 'you' && e.reason === 'active-focused-edit').length >= 1);
   });
 
-  test('the native decoration for the edited file: "●", the edited theme colour, a File Shake tooltip, propagate', async () => {
+  test('the native decoration for the edited file: "●", the edited theme colour, a Changescope tooltip, propagate', async () => {
     const a = p('a.ts');
     await typeAndWait(api, await openDoc(a));
     const d = must(decorationOf(api, a), 'decoration');
     assert.equal(d.badge, '●');
-    assert.equal(colorIdOf(d), 'fileShake.editedForeground');
-    assert.ok((d.tooltip ?? '').startsWith('File Shake: '));
+    assert.equal(colorIdOf(d), 'changescope.editedForeground');
+    assert.ok((d.tooltip ?? '').startsWith('Changescope: '));
     assert.equal(d.propagate, true);
   });
 
@@ -85,7 +85,7 @@ suite('Editing a file (single-root workspace)', () => {
     assert.equal(c.badge, '×1 ref');
     const db = must(decorationOf(api, p('b.ts')));
     assert.equal(db.badge, '4');
-    assert.equal(colorIdOf(db), 'fileShake.referencedForeground');
+    assert.equal(colorIdOf(db), 'changescope.referencedForeground');
     assert.equal(must(decorationOf(api, p('c.ts'))).badge, '1');
     assert.equal(decorationOf(api, p('notes.txt')), undefined, 'unrelated files get no decoration');
     assert.equal(api.getStatusText(), '$(pulse) a.ts · typing · 2 refs');
@@ -100,7 +100,7 @@ suite('Editing a file (single-root workspace)', () => {
     await waitUntil(api, () => rowOf(api, keyOf(p('b.ts')))?.role === 'edited', 'b.ts to turn green');
     assert.equal(api.getRows().filter((r) => r.id === keyOf(p('b.ts'))).length, 1);
     assert.equal(must(decorationOf(api, p('b.ts'))).badge, '●');
-    assert.equal(colorIdOf(decorationOf(api, p('b.ts'))), 'fileShake.editedForeground');
+    assert.equal(colorIdOf(decorationOf(api, p('b.ts'))), 'changescope.editedForeground');
     assert.equal(rowOf(api, keyOf(p('c.ts')))?.role, 'referenced', 'c.ts is still referenced by a.ts');
   });
 
@@ -112,7 +112,7 @@ suite('Editing a file (single-root workspace)', () => {
     assert.equal(must(rowOf(api, keyOf(p('py/pkg/mod.py')))).refCount, 3);
     assert.equal(must(rowOf(api, keyOf(p('py/util.py')))).refCount, 3);
 
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     await typeAndWait(api, await openDoc(p('styles/main.scss')));
     await settleRefs(api);
     await waitUntil(api, () => rowOf(api, keyOf(p('styles/_vars.scss'))) !== undefined, 'the scss partial');
@@ -132,7 +132,7 @@ suite('Editing a file (single-root workspace)', () => {
     const doc = await openDoc(a);
     const first = await typeAndWait(api, doc);
     assert.ok(Math.abs(first.intensity - 0.2835) < 0.005, `single keystroke intensity ${first.intensity}`);
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     testing(api).advance(10_000);
     for (let k = 1; k <= 15; k++) {
       testing(api).advance(200);
@@ -274,11 +274,11 @@ suite('Editing a file (single-root workspace)', () => {
     const a = p('a.ts');
     await typeAndWait(api, await openDoc(a));
     assert.ok(rowOf(api, keyOf(a)));
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     assert.deepEqual(api.getRows(), []);
     assert.deepEqual(api.getTracked(), []);
     assert.equal(decorationOf(api, a), undefined);
-    assert.equal(api.getStatusText(), '$(pulse) File Shake');
+    assert.equal(api.getStatusText(), '$(pulse) Changescope');
   });
 
   test('a symlinked import target counts (isFile is true for symlinked files, no realpath)', async function () {

@@ -198,7 +198,7 @@ export function createOverview(doc: Document): View {
         setText(
           empty,
           !s.enabled
-            ? 'No activity recorded. File Shake is turned off.'
+            ? 'No activity recorded. Changescope is turned off.'
             : s.settings.paused
               ? 'No activity recorded. Tracking is paused.'
               : 'No activity yet. Edit a file, or let a tool change one, and it appears here.',

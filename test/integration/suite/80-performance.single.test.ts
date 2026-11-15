@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { getApi, keyOf, must, openDoc, resetConfig, resetState, rowOf, setConfig, settleRefs, testing, trackedOf, typeAndWait, waitUntil, workspaceDir } from './helpers';
 
 /** Budget for the extension's overhead per keystroke, in ms of extension-host time. See docs/QA_REPORT.md section on performance. */
@@ -14,7 +14,7 @@ const EDITS = 200;
 const ROUNDS = 3;
 
 suite('Performance of the real adapters (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
 
   suiteSetup(async function () {

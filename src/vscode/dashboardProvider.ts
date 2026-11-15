@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
 import { buildSummaryInput } from '../core/ai/provider';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { buildDashboardState, stateSignature } from '../core/dashboard/model';
 import type { FileLiveState } from '../core/dashboard/model';
 import { DASH_LIMITS, parseDashboardWebviewMessage } from '../core/dashboard/protocol';
@@ -37,7 +37,7 @@ export interface DashboardDeps {
   extensionId: string;
   scheduler: Scheduler;
   now(): number;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   activity: ActivityService;
   git: GitService;
@@ -71,13 +71,13 @@ export interface DashboardStats {
 }
 
 /**
- * The dashboard: a webview view in the File Shake Activity Bar container, and optionally the same page in
+ * The dashboard: a webview view in the Changescope Activity Bar container, and optionally the same page in
  * an editor tab. It rebuilds and posts state only while a target is visible, never trusts an id from the
  * webview beyond looking it up in the state it last sent, and holds no logic of its own.
  */
 export class DashboardProvider implements vscode.WebviewViewProvider, vscode.Disposable {
-  static readonly viewType = 'fileShake.dashboard';
-  static readonly panelType = 'fileShake.dashboardPanel';
+  static readonly viewType = 'changescope.dashboard';
+  static readonly panelType = 'changescope.dashboardPanel';
 
   private view: vscode.WebviewView | undefined;
   private panel: vscode.WebviewPanel | undefined;
@@ -124,7 +124,7 @@ export class DashboardProvider implements vscode.WebviewViewProvider, vscode.Dis
       this.panel.reveal();
       return;
     }
-    const panel = vscode.window.createWebviewPanel(DashboardProvider.panelType, 'File Shake', vscode.ViewColumn.Active, {
+    const panel = vscode.window.createWebviewPanel(DashboardProvider.panelType, 'Changescope', vscode.ViewColumn.Active, {
       enableScripts: true,
       retainContextWhenHidden: false,
       localResourceRoots: this.roots(),
@@ -355,10 +355,10 @@ export class DashboardProvider implements vscode.WebviewViewProvider, vscode.Dis
         if (this.known.sessions.has(msg.id)) activity.renameSession(msg.id, msg.title);
         return;
       case 'sessionExport':
-        if (this.known.sessions.has(msg.id)) void vscode.commands.executeCommand('fileShake.exportSessionReport', msg.id);
+        if (this.known.sessions.has(msg.id)) void vscode.commands.executeCommand('changescope.exportSessionReport', msg.id);
         return;
       case 'clearHistory':
-        void vscode.commands.executeCommand('fileShake.clearHistory');
+        void vscode.commands.executeCommand('changescope.clearHistory');
         return;
       case 'openSettings':
         void vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${this.deps.extensionId}`);
@@ -400,7 +400,7 @@ export class DashboardProvider implements vscode.WebviewViewProvider, vscode.Dis
 
   private sensitiveCache: { key: string; fn: (rel: string) => boolean } | undefined;
 
-  private isSensitive(key: FileKey, cfg: FileShakeConfig, roots: readonly WorkspaceRoot[]): boolean {
+  private isSensitive(key: FileKey, cfg: ChangescopeConfig, roots: readonly WorkspaceRoot[]): boolean {
     const id = JSON.stringify(cfg.sensitiveGlobs);
     if (this.sensitiveCache?.key !== id) {
       this.sensitiveCache = { key: id, fn: createExcludeMatcher(cfg.sensitiveGlobs, { nocase: true }) };
@@ -423,7 +423,7 @@ export class DashboardProvider implements vscode.WebviewViewProvider, vscode.Dis
       nonce: makeNonce((n) => randomBytes(n)),
       scriptUri: webview.asWebviewUri(vscode.Uri.joinPath(dist, 'dashboard.js')).toString(),
       styleUri: webview.asWebviewUri(vscode.Uri.joinPath(media, 'dashboard.css')).toString(),
-      title: `File Shake ${title}`,
+      title: `Changescope ${title}`,
     });
   }
 

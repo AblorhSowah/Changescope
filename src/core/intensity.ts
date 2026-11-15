@@ -110,7 +110,7 @@ export function shakeParams(intensity: number): ShakeParams {
   };
 }
 
-/** `fileShake.animationIntensity`: non-finite -> 1; otherwise clamped to [0.25, 2]. */
+/** `changescope.animationIntensity`: non-finite -> 1; otherwise clamped to [0.25, 2]. */
 export function clampAnimationIntensity(k: number): number {
   if (!Number.isFinite(k)) return 1;
   return Math.min(2, Math.max(0.25, k));

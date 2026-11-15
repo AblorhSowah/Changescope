@@ -10,7 +10,7 @@ const P = {
   nonce: 'abcdef0123456789abcdef0123456789',
   scriptUri: 'vscode-resource:/ext/dist/webview.js',
   styleUri: 'vscode-resource:/ext/media/webview.css',
-  title: 'File Shake',
+  title: 'Changescope',
 };
 
 describe('makeNonce', () => {

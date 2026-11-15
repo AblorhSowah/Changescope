@@ -4,7 +4,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO_ROOT, must, readRepoFile } from '../support/fixtures';
 import { DEFAULT_CONFIG, sanitizeConfig } from '../../src/core/config';
-import type { FileShakeConfig } from '../../src/core/config';
+import type { ChangescopeConfig } from '../../src/core/config';
 
 interface Pkg {
   name: string;
@@ -25,7 +25,7 @@ interface Pkg {
   capabilities: { untrustedWorkspaces: { supported: boolean | string }; virtualWorkspaces: { supported: boolean | string; description?: string } };
   contributes: {
     viewsContainers: { activitybar: Array<{ id: string; title: string; icon: string }> };
-    views: { explorer: Array<{ type: string; id: string; name: string; contextualTitle?: string }>; fileShake: Array<{ type: string; id: string; name: string; contextualTitle?: string }> };
+    views: { explorer: Array<{ type: string; id: string; name: string; contextualTitle?: string }>; changescope: Array<{ type: string; id: string; name: string; contextualTitle?: string }> };
     commands: Array<{ command: string; title: string; category?: string; icon?: string }>;
     menus: { 'view/title': Array<{ command: string; when: string; group: string }>; commandPalette: Array<{ command: string; when: string }> };
     colors: Array<{ id: string; description: string; defaults: Record<string, string> }>;
@@ -54,10 +54,10 @@ const props = pkg.contributes.configuration.properties;
 
 describe('package.json: identity and platform fields', () => {
   it('identity', () => {
-    assert.equal(pkg.name, 'file-shake');
-    assert.equal(pkg.displayName, 'File Shake');
+    assert.equal(pkg.name, 'changescope');
+    assert.equal(pkg.displayName, 'Changescope');
     assert.equal(pkg.version, '0.3.0');
-    assert.equal(pkg.publisher, 'file-shake');
+    assert.equal(pkg.publisher, 'changescope');
     assert.equal(pkg.license, 'MIT');
     assert.ok(pkg.description.length > 20);
     assert.match(pkg.repository.url, /^https:\/\/github\.com\//);
@@ -146,44 +146,44 @@ describe('package.json: scripts (DESIGN 13)', () => {
 });
 
 describe('package.json: contributes.views / commands / menus', () => {
-  it('one webview view in the Explorer sidebar with id fileShake.view (unchanged since 0.2.0)', () => {
+  it('one webview view in the Explorer sidebar with id changescope.view (unchanged since 0.2.0)', () => {
     assert.equal(pkg.contributes.views.explorer.length, 1);
     const v = must(pkg.contributes.views.explorer[0]);
     assert.equal(v.type, 'webview');
-    assert.equal(v.id, 'fileShake.view');
-    assert.equal(v.name, 'File Shake');
+    assert.equal(v.id, 'changescope.view');
+    assert.equal(v.name, 'Changescope');
   });
 
-  it('0.3.0: an Activity Bar container "fileShake" with a monochrome icon, holding the webview view fileShake.dashboard', () => {
-    assert.deepEqual(pkg.contributes.viewsContainers.activitybar, [{ id: 'fileShake', title: 'File Shake', icon: 'media/activity.svg' }]);
-    assert.equal(pkg.contributes.views.fileShake.length, 1);
-    const v = must(pkg.contributes.views.fileShake[0]);
+  it('0.3.0: an Activity Bar container "changescope" with a monochrome icon, holding the webview view changescope.dashboard', () => {
+    assert.deepEqual(pkg.contributes.viewsContainers.activitybar, [{ id: 'changescope', title: 'Changescope', icon: 'media/activity.svg' }]);
+    assert.equal(pkg.contributes.views.changescope.length, 1);
+    const v = must(pkg.contributes.views.changescope[0]);
     assert.equal(v.type, 'webview');
-    assert.equal(v.id, 'fileShake.dashboard');
+    assert.equal(v.id, 'changescope.dashboard');
     assert.equal(v.name, 'Activity');
     const svg = readRepoFile('media/activity.svg');
     assert.match(svg, /currentColor/, 'the Activity Bar icon takes its colour from the theme');
     assert.doesNotMatch(svg, /#[0-9a-fA-F]{3,8}\b|rgb\(|<script|<image|href=|on[a-z]+=/i, 'no literal colour, script, image or handler');
   });
 
-  const COMMANDS_0_2 = ['fileShake.clear', 'fileShake.focusView', 'fileShake.showDebugInfo', 'fileShake.toggle'];
+  const COMMANDS_0_2 = ['changescope.clear', 'changescope.focusView', 'changescope.showDebugInfo', 'changescope.toggle'];
   const COMMANDS_0_3 = [
-    'fileShake.openDashboard',
-    'fileShake.openDashboardPanel',
-    'fileShake.setViewMode',
-    'fileShake.pause',
-    'fileShake.resume',
-    'fileShake.startSession',
-    'fileShake.stopSession',
-    'fileShake.renameSession',
-    'fileShake.exportSessionReport',
-    'fileShake.markAllReviewed',
-    'fileShake.clearHistory',
-    'fileShake.rebuildDependencyIndex',
-    'fileShake.copyAgentHook',
-    'fileShake.ai.setKey',
-    'fileShake.ai.clearKey',
-    'fileShake.ai.resetConsent',
+    'changescope.openDashboard',
+    'changescope.openDashboardPanel',
+    'changescope.setViewMode',
+    'changescope.pause',
+    'changescope.resume',
+    'changescope.startSession',
+    'changescope.stopSession',
+    'changescope.renameSession',
+    'changescope.exportSessionReport',
+    'changescope.markAllReviewed',
+    'changescope.clearHistory',
+    'changescope.rebuildDependencyIndex',
+    'changescope.copyAgentHook',
+    'changescope.ai.setKey',
+    'changescope.ai.clearKey',
+    'changescope.ai.resetConsent',
   ];
 
   it('the four 0.2.0 commands are all still there, unrenamed (no command is removed in 0.3.0)', () => {
@@ -191,38 +191,38 @@ describe('package.json: contributes.views / commands / menus', () => {
     for (const id of COMMANDS_0_2) assert.ok(cmds.includes(id), id);
   });
 
-  it('exactly the twenty documented commands (4 from 0.2.0 + the 16 of DESIGN-0.3.0 section 12), all in the File Shake category with a title', () => {
+  it('exactly the twenty documented commands (4 from 0.2.0 + the 16 of DESIGN-0.3.0 section 12), all in the Changescope category with a title', () => {
     const cmds = pkg.contributes.commands.map((c) => c.command).sort();
     assert.deepEqual(cmds, [...COMMANDS_0_2, ...COMMANDS_0_3].sort());
     assert.equal(new Set(cmds).size, 20, 'no duplicate');
     for (const c of pkg.contributes.commands) {
-      assert.equal(c.category, 'File Shake');
+      assert.equal(c.category, 'Changescope');
       assert.ok(c.title.length > 0);
     }
   });
 
   it('the commands that appear as buttons in a view title carry a codicon', () => {
     const icon = (id: string): string | undefined => pkg.contributes.commands.find((c) => c.command === id)?.icon;
-    for (const id of ['fileShake.pause', 'fileShake.resume', 'fileShake.markAllReviewed', 'fileShake.openDashboardPanel']) assert.match(icon(id) ?? '', /^\$\([a-z-]+\)$/, id);
+    for (const id of ['changescope.pause', 'changescope.resume', 'changescope.markAllReviewed', 'changescope.openDashboardPanel']) assert.match(icon(id) ?? '', /^\$\([a-z-]+\)$/, id);
   });
 
   it('view title menus: the Explorer view keeps clear + toggle; the dashboard view gets pause/resume, mark all reviewed and open in editor', () => {
     const items = pkg.contributes.menus['view/title'];
-    const explorer = items.filter((i) => i.when === 'view == fileShake.view').map((i) => i.command).sort();
-    assert.deepEqual(explorer, ['fileShake.clear', 'fileShake.toggle']);
-    const dash = items.filter((i) => i.when.includes('view == fileShake.dashboard'));
-    assert.deepEqual(dash.map((i) => i.command).sort(), ['fileShake.markAllReviewed', 'fileShake.openDashboardPanel', 'fileShake.pause', 'fileShake.resume']);
+    const explorer = items.filter((i) => i.when === 'view == changescope.view').map((i) => i.command).sort();
+    assert.deepEqual(explorer, ['changescope.clear', 'changescope.toggle']);
+    const dash = items.filter((i) => i.when.includes('view == changescope.dashboard'));
+    assert.deepEqual(dash.map((i) => i.command).sort(), ['changescope.markAllReviewed', 'changescope.openDashboardPanel', 'changescope.pause', 'changescope.resume']);
     assert.equal(items.length, 6, 'nothing else is in a view title menu');
     const whenOf = (id: string): string => must(items.find((i) => i.command === id)).when;
-    assert.equal(whenOf('fileShake.pause'), 'view == fileShake.dashboard && !fileShake.paused');
-    assert.equal(whenOf('fileShake.resume'), 'view == fileShake.dashboard && fileShake.paused');
+    assert.equal(whenOf('changescope.pause'), 'view == changescope.dashboard && !changescope.paused');
+    assert.equal(whenOf('changescope.resume'), 'view == changescope.dashboard && changescope.paused');
     for (const i of items) assert.match(i.group, /^navigation(@\d+)?$/);
   });
 
-  it('the command palette only offers the one of pause / resume that makes sense, from the fileShake.paused context key', () => {
+  it('the command palette only offers the one of pause / resume that makes sense, from the changescope.paused context key', () => {
     assert.deepEqual(pkg.contributes.menus.commandPalette, [
-      { command: 'fileShake.pause', when: '!fileShake.paused' },
-      { command: 'fileShake.resume', when: 'fileShake.paused' },
+      { command: 'changescope.pause', when: '!changescope.paused' },
+      { command: 'changescope.resume', when: 'changescope.paused' },
     ]);
   });
 
@@ -235,8 +235,8 @@ describe('package.json: contributed theme colours', () => {
   const byId = (id: string) => must(pkg.contributes.colors.find((c) => c.id === id), id);
 
   it('edited and referenced colours with the documented per-theme defaults', () => {
-    assert.deepEqual(byId('fileShake.editedForeground').defaults, { dark: '#3fb950', light: '#1a7f37', highContrast: '#3fb950', highContrastLight: '#116329' });
-    assert.deepEqual(byId('fileShake.referencedForeground').defaults, { dark: '#e3b341', light: '#9a6700', highContrast: '#e3b341', highContrastLight: '#7d4e00' });
+    assert.deepEqual(byId('changescope.editedForeground').defaults, { dark: '#3fb950', light: '#1a7f37', highContrast: '#3fb950', highContrastLight: '#116329' });
+    assert.deepEqual(byId('changescope.referencedForeground').defaults, { dark: '#e3b341', light: '#9a6700', highContrast: '#e3b341', highContrastLight: '#7d4e00' });
     assert.equal(pkg.contributes.colors.length, 2);
   });
 
@@ -248,46 +248,46 @@ describe('package.json: contributed theme colours', () => {
   });
 
   it('brief hex defaults for dark: green #3fb950, yellow #e3b341', () => {
-    assert.equal(byId('fileShake.editedForeground').defaults['dark'], '#3fb950');
-    assert.equal(byId('fileShake.referencedForeground').defaults['dark'], '#e3b341');
+    assert.equal(byId('changescope.editedForeground').defaults['dark'], '#3fb950');
+    assert.equal(byId('changescope.referencedForeground').defaults['dark'], '#e3b341');
   });
 
   it('the DecorationSpec colour ids in core are the contributed ids', () => {
     const ids = pkg.contributes.colors.map((c) => c.id).sort();
-    assert.deepEqual(ids, ['fileShake.editedForeground', 'fileShake.referencedForeground']);
+    assert.deepEqual(ids, ['changescope.editedForeground', 'changescope.referencedForeground']);
   });
 });
 
 describe('package.json: configuration matches core/config defaults and ranges', () => {
-  const keyOf: Record<string, keyof FileShakeConfig> = {
-    'fileShake.enable': 'enable',
-    'fileShake.enableAnimation': 'enableAnimation',
-    'fileShake.idleTimeoutMs': 'idleTimeoutMs',
-    'fileShake.windowMs': 'windowMs',
-    'fileShake.maxFiles': 'maxFiles',
-    'fileShake.excludeGlobs': 'excludeGlobs',
-    'fileShake.colors.edited': 'editedColor',
-    'fileShake.colors.referenced': 'referencedColor',
-    'fileShake.sensitivity': 'sensitivity',
-    'fileShake.showWhenIdle': 'showWhenIdle',
-    'fileShake.persistUntilNextFile': 'persistUntilNextFile',
-    'fileShake.decorateFolders': 'decorateFolders',
-    'fileShake.detectExternalEdits': 'detectExternalEdits',
-    'fileShake.maxFileSizeKb': 'maxFileSizeKb',
-    'fileShake.showStatusBar': 'showStatusBar',
-    'fileShake.viewMode': 'viewMode',
-    'fileShake.animationIntensity': 'animationIntensity',
-    'fileShake.history.persist': 'historyPersist',
-    'fileShake.history.maxEvents': 'historyMaxEvents',
-    'fileShake.history.retentionDays': 'historyRetentionDays',
-    'fileShake.git.enabled': 'gitEnabled',
-    'fileShake.dependencies.index': 'dependencyIndex',
-    'fileShake.dependencies.maxFiles': 'dependencyMaxFiles',
-    'fileShake.collisions.notify': 'collisionsNotify',
-    'fileShake.sensitiveGlobs': 'sensitiveGlobs',
-    'fileShake.ai.mode': 'aiMode',
-    'fileShake.ai.provider': 'aiProvider',
-    'fileShake.experimental.agentSignals': 'agentSignals',
+  const keyOf: Record<string, keyof ChangescopeConfig> = {
+    'changescope.enable': 'enable',
+    'changescope.enableAnimation': 'enableAnimation',
+    'changescope.idleTimeoutMs': 'idleTimeoutMs',
+    'changescope.windowMs': 'windowMs',
+    'changescope.maxFiles': 'maxFiles',
+    'changescope.excludeGlobs': 'excludeGlobs',
+    'changescope.colors.edited': 'editedColor',
+    'changescope.colors.referenced': 'referencedColor',
+    'changescope.sensitivity': 'sensitivity',
+    'changescope.showWhenIdle': 'showWhenIdle',
+    'changescope.persistUntilNextFile': 'persistUntilNextFile',
+    'changescope.decorateFolders': 'decorateFolders',
+    'changescope.detectExternalEdits': 'detectExternalEdits',
+    'changescope.maxFileSizeKb': 'maxFileSizeKb',
+    'changescope.showStatusBar': 'showStatusBar',
+    'changescope.viewMode': 'viewMode',
+    'changescope.animationIntensity': 'animationIntensity',
+    'changescope.history.persist': 'historyPersist',
+    'changescope.history.maxEvents': 'historyMaxEvents',
+    'changescope.history.retentionDays': 'historyRetentionDays',
+    'changescope.git.enabled': 'gitEnabled',
+    'changescope.dependencies.index': 'dependencyIndex',
+    'changescope.dependencies.maxFiles': 'dependencyMaxFiles',
+    'changescope.collisions.notify': 'collisionsNotify',
+    'changescope.sensitiveGlobs': 'sensitiveGlobs',
+    'changescope.ai.mode': 'aiMode',
+    'changescope.ai.provider': 'aiProvider',
+    'changescope.experimental.agentSignals': 'agentSignals',
   };
 
   it('exactly the documented 28 settings (the 15 of 0.2.0 and the 13 of DESIGN-0.3.0 section 12)', () => {
@@ -305,15 +305,15 @@ describe('package.json: configuration matches core/config defaults and ranges', 
   }
 
   const numeric: Array<[string, 'number' | 'integer', number, number]> = [
-    ['fileShake.idleTimeoutMs', 'number', 500, 60000],
-    ['fileShake.windowMs', 'number', 500, 30000],
-    ['fileShake.maxFiles', 'integer', 5, 200],
-    ['fileShake.sensitivity', 'number', 0.25, 4],
-    ['fileShake.maxFileSizeKb', 'integer', 16, 4096],
-    ['fileShake.animationIntensity', 'number', 0.25, 2],
-    ['fileShake.history.maxEvents', 'integer', 100, 5000],
-    ['fileShake.history.retentionDays', 'integer', 1, 90],
-    ['fileShake.dependencies.maxFiles', 'integer', 200, 20000],
+    ['changescope.idleTimeoutMs', 'number', 500, 60000],
+    ['changescope.windowMs', 'number', 500, 30000],
+    ['changescope.maxFiles', 'integer', 5, 200],
+    ['changescope.sensitivity', 'number', 0.25, 4],
+    ['changescope.maxFileSizeKb', 'integer', 16, 4096],
+    ['changescope.animationIntensity', 'number', 0.25, 2],
+    ['changescope.history.maxEvents', 'integer', 100, 5000],
+    ['changescope.history.retentionDays', 'integer', 1, 90],
+    ['changescope.dependencies.maxFiles', 'integer', 200, 20000],
   ];
   for (const [setting, type, min, max] of numeric) {
     it(`${setting}: ${type} in [${min}, ${max}], the same clamp range sanitizeConfig applies`, () => {
@@ -329,15 +329,15 @@ describe('package.json: configuration matches core/config defaults and ranges', 
 
   it('boolean settings are booleans', () => {
     for (const s of ['enable', 'enableAnimation', 'showWhenIdle', 'persistUntilNextFile', 'decorateFolders', 'detectExternalEdits', 'showStatusBar', 'history.persist', 'git.enabled', 'collisions.notify', 'experimental.agentSignals']) {
-      assert.equal(must(props[`fileShake.${s}`]).type, 'boolean', s);
+      assert.equal(must(props[`changescope.${s}`]).type, 'boolean', s);
     }
   });
 
   it('enum settings list exactly the values core/config accepts, and describe each of them', () => {
-    const enums: Array<[string, keyof FileShakeConfig, string[]]> = [
-      ['fileShake.viewMode', 'viewMode', ['live', 'compact', 'impact']],
-      ['fileShake.dependencies.index', 'dependencyIndex', ['onDemand', 'off']],
-      ['fileShake.ai.mode', 'aiMode', ['local', 'assisted']],
+    const enums: Array<[string, keyof ChangescopeConfig, string[]]> = [
+      ['changescope.viewMode', 'viewMode', ['live', 'compact', 'impact']],
+      ['changescope.dependencies.index', 'dependencyIndex', ['onDemand', 'off']],
+      ['changescope.ai.mode', 'aiMode', ['local', 'assisted']],
     ];
     for (const [setting, key, values] of enums) {
       const p = must(props[setting], setting);
@@ -349,15 +349,15 @@ describe('package.json: configuration matches core/config defaults and ranges', 
     }
   });
 
-  it('fileShake.sensitiveGlobs: an array of strings whose default is the ten globs of DESIGN-0.3.0 section 12', () => {
-    const p = must(props['fileShake.sensitiveGlobs']);
+  it('changescope.sensitiveGlobs: an array of strings whose default is the ten globs of DESIGN-0.3.0 section 12', () => {
+    const p = must(props['changescope.sensitiveGlobs']);
     assert.equal(p.type, 'array');
     assert.deepEqual(p.items, { type: 'string' });
     assert.deepEqual(p.default, ['**/.env*', '**/*.pem', '**/*.key', '**/*.pfx', '**/*.p12', '**/id_rsa*', '**/id_ed25519*', '**/secrets/**', '**/.npmrc', '**/.netrc']);
   });
 
-  it('fileShake.ai.provider: the manifest pattern is the same rule as core/config (empty or a short opaque id)', () => {
-    const p = must(props['fileShake.ai.provider']);
+  it('changescope.ai.provider: the manifest pattern is the same rule as core/config (empty or a short opaque id)', () => {
+    const p = must(props['changescope.ai.provider']);
     assert.equal(p.type, 'string');
     assert.equal(p.default, '');
     const re = new RegExp(must(p.pattern));
@@ -372,19 +372,19 @@ describe('package.json: configuration matches core/config defaults and ranges', 
   });
 
   it('privacy defaults: AI is local, the agent signal file is off, history is kept per workspace only', () => {
-    assert.equal(must(props['fileShake.ai.mode']).default, 'local');
-    assert.equal(must(props['fileShake.experimental.agentSignals']).default, false);
+    assert.equal(must(props['changescope.ai.mode']).default, 'local');
+    assert.equal(must(props['changescope.experimental.agentSignals']).default, false);
     for (const p of Object.values(props)) assert.equal(p.scope, 'window', 'no setting can be set per machine or per resource by accident');
   });
 
   it('excludeGlobs is an array of strings', () => {
-    const p = must(props['fileShake.excludeGlobs']);
+    const p = must(props['changescope.excludeGlobs']);
     assert.equal(p.type, 'array');
     assert.deepEqual(p.items, { type: 'string' });
   });
 
   it('colour settings: strings with the same pattern core/config enforces, and they say "webview only"', () => {
-    for (const s of ['fileShake.colors.edited', 'fileShake.colors.referenced']) {
+    for (const s of ['changescope.colors.edited', 'changescope.colors.referenced']) {
       const p = must(props[s]);
       assert.equal(p.type, 'string');
       assert.equal(p.default, '');
@@ -394,7 +394,7 @@ describe('package.json: configuration matches core/config defaults and ranges', 
       const md = must(p.markdownDescription);
       assert.match(md, /webview/i);
       assert.ok(md.includes('workbench.colorCustomizations'), 'points users to the real way to recolour Explorer decorations');
-      assert.ok(md.includes('fileShake.editedForeground') && md.includes('fileShake.referencedForeground'));
+      assert.ok(md.includes('changescope.editedForeground') && md.includes('changescope.referencedForeground'));
     }
   });
 });
@@ -409,7 +409,7 @@ describe('repository files required for a Marketplace-ready package', () => {
   it('LICENSE is MIT with the documented copyright line', () => {
     const t = readFileSync(must_exist('LICENSE'), 'utf8');
     assert.match(t, /MIT License/);
-    assert.match(t, /Copyright \(c\) 2026 File Shake contributors/);
+    assert.match(t, /Copyright \(c\) 2026 Changescope contributors/);
     assert.match(t, /Permission is hereby granted, free of charge/);
   });
 
@@ -479,7 +479,7 @@ describe('repository files required for a Marketplace-ready package', () => {
     // section 9 reliability: false positives of "you"
     assert.ok(/(copilot|inline completion|snippet|workspaceedit)/.test(lower), 'lists the cases that look like typing');
     assert.ok(/prefers-reduced-motion|reduced motion/.test(lower), 'documents reduced motion');
-    assert.ok(/fileShake\.enableAnimation/.test(readme));
+    assert.ok(/changescope\.enableAnimation/.test(readme));
     assert.ok(/MIT/.test(readme));
   });
 

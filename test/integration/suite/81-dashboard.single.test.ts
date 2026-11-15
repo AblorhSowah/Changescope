@@ -4,33 +4,33 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { parseDashboardHostMessage } from '../../../src/core/dashboard/protocol';
 import { stateSignature } from '../../../src/core/dashboard/model';
 import { EXT_ID, envPath, getApi, keyOf, must, openDoc, resetConfig, rowOf, setConfig, testing, typeAndWait, waitUntil, workspaceDir } from './helpers';
 import { dashboardState, resetAll, run, send } from './helpers030';
 
 const NEW_COMMANDS = [
-  'fileShake.openDashboard',
-  'fileShake.openDashboardPanel',
-  'fileShake.setViewMode',
-  'fileShake.pause',
-  'fileShake.resume',
-  'fileShake.startSession',
-  'fileShake.stopSession',
-  'fileShake.renameSession',
-  'fileShake.exportSessionReport',
-  'fileShake.markAllReviewed',
-  'fileShake.clearHistory',
-  'fileShake.rebuildDependencyIndex',
-  'fileShake.copyAgentHook',
-  'fileShake.ai.setKey',
-  'fileShake.ai.clearKey',
-  'fileShake.ai.resetConsent',
+  'changescope.openDashboard',
+  'changescope.openDashboardPanel',
+  'changescope.setViewMode',
+  'changescope.pause',
+  'changescope.resume',
+  'changescope.startSession',
+  'changescope.stopSession',
+  'changescope.renameSession',
+  'changescope.exportSessionReport',
+  'changescope.markAllReviewed',
+  'changescope.clearHistory',
+  'changescope.rebuildDependencyIndex',
+  'changescope.copyAgentHook',
+  'changescope.ai.setKey',
+  'changescope.ai.clearKey',
+  'changescope.ai.resetConsent',
 ];
 
 suite('0.3.0 dashboard (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
 
   suiteSetup(async function () {
@@ -51,14 +51,14 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
   test('the manifest reached VS Code: Activity Bar container, dashboard view, 20 commands, 28 settings with the documented 0.3.0 defaults', async () => {
     const ext = must(vscode.extensions.getExtension(EXT_ID), 'extension');
     const c = (ext.packageJSON as { contributes: { viewsContainers: { activitybar: Array<{ id: string }> }; views: Record<string, Array<{ id: string; type: string }>>; configuration: { properties: Record<string, unknown> } } }).contributes;
-    assert.deepEqual(c.viewsContainers.activitybar.map((v) => v.id), ['fileShake']);
-    assert.deepEqual(c.views['fileShake']?.map((v) => `${v.type}:${v.id}`), ['webview:fileShake.dashboard']);
-    assert.deepEqual(c.views['explorer']?.map((v) => `${v.type}:${v.id}`), ['webview:fileShake.view'], 'the Explorer view is unchanged');
+    assert.deepEqual(c.viewsContainers.activitybar.map((v) => v.id), ['changescope']);
+    assert.deepEqual(c.views['changescope']?.map((v) => `${v.type}:${v.id}`), ['webview:changescope.dashboard']);
+    assert.deepEqual(c.views['explorer']?.map((v) => `${v.type}:${v.id}`), ['webview:changescope.view'], 'the Explorer view is unchanged');
     assert.equal(Object.keys(c.configuration.properties).length, 28);
     const all = await vscode.commands.getCommands(true);
     for (const id of NEW_COMMANDS) assert.ok(all.includes(id), `${id} is not registered`);
-    assert.ok(all.includes('fileShake.dashboard.focus'), 'the auto-generated focus command of the dashboard view');
-    const cfg = vscode.workspace.getConfiguration('fileShake');
+    assert.ok(all.includes('changescope.dashboard.focus'), 'the auto-generated focus command of the dashboard view');
+    const cfg = vscode.workspace.getConfiguration('changescope');
     assert.equal(cfg.get('viewMode'), 'live');
     assert.equal(cfg.get('animationIntensity'), 1);
     assert.equal(cfg.get('history.persist'), true);
@@ -82,9 +82,9 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
     }
   });
 
-  test('fileShake.openDashboard loads the Activity Bar view, the webview runs dist/dashboard.js and posts ready, and a state is sent', async function () {
+  test('changescope.openDashboard loads the Activity Bar view, the webview runs dist/dashboard.js and posts ready, and a state is sent', async function () {
     this.timeout(120_000);
-    await run('fileShake.openDashboard');
+    await run('changescope.openDashboard');
     await waitUntil(api, () => testing(api).dashboardStats().resolved >= 1, 'the dashboard view to be resolved', 60_000);
     await waitUntil(api, () => testing(api).dashboardStats().ready >= 1, 'the dashboard webview to post {type:"ready"}', 60_000);
     await waitUntil(api, () => testing(api).dashboardStats().sent >= 1, 'the first state to be sent', 30_000);
@@ -96,7 +96,7 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
 
   test('a visible dashboard is sent a new state when something happens (debounced on the injected scheduler), and an idle one is not', async function () {
     this.timeout(120_000);
-    await run('fileShake.openDashboard');
+    await run('changescope.openDashboard');
     await waitUntil(api, () => testing(api).dashboardStats().ready >= 1, 'ready', 60_000);
     testing(api).advance(1000);
     const base = testing(api).dashboardStats().sent;
@@ -136,12 +136,12 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
 
   test('valid messages from the webview are acted on: setMode, setAnimate, setPaused', async function () {
     this.timeout(60_000);
-    const cfg = vscode.workspace.getConfiguration('fileShake');
+    const cfg = vscode.workspace.getConfiguration('changescope');
     send(api, { type: 'setMode', mode: 'compact' });
-    await waitUntil(api, () => vscode.workspace.getConfiguration('fileShake').get('viewMode') === 'compact', 'viewMode compact', 20_000);
+    await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('viewMode') === 'compact', 'viewMode compact', 20_000);
     assert.equal(dashboardState(api).settings.mode, 'compact');
     send(api, { type: 'setAnimate', value: false });
-    await waitUntil(api, () => vscode.workspace.getConfiguration('fileShake').get('enableAnimation') === false, 'animation off', 20_000);
+    await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('enableAnimation') === false, 'animation off', 20_000);
     assert.equal(dashboardState(api).settings.animate, false);
     send(api, { type: 'setPaused', value: true });
     assert.equal(dashboardState(api).settings.paused, true);
@@ -201,9 +201,9 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
 
   test('the editor panel opens once, a second call brings the same panel forward, and closing it leaves no timer behind', async function () {
     this.timeout(120_000);
-    await run('fileShake.openDashboardPanel');
+    await run('changescope.openDashboardPanel');
     await waitUntil(api, () => testing(api).dashboardStats().panelOpen, 'the panel to open', 30_000);
-    await run('fileShake.openDashboardPanel');
+    await run('changescope.openDashboardPanel');
     const panelTabs = (): vscode.Tab[] => vscode.window.tabGroups.all.flatMap((g) => g.tabs).filter((t) => t.input instanceof vscode.TabInputWebview);
     await waitUntil(api, () => panelTabs().length >= 1, `the panel tab to appear (tabs: ${JSON.stringify(vscode.window.tabGroups.all.flatMap((g) => g.tabs).map((t) => `${t.label}|${t.input instanceof vscode.TabInputWebview ? 'webview' : 'other'}`))})`, 30_000);
     assert.equal(panelTabs().length, 1, 'one panel at a time');
@@ -240,7 +240,7 @@ suite('0.3.0 dashboard (single-root workspace)', () => {
 
   test('zero pending timers when idle: with the dashboard visible, after activity has settled, and nothing is left by the messages above', async function () {
     this.timeout(120_000);
-    await run('fileShake.openDashboard');
+    await run('changescope.openDashboard');
     await waitUntil(api, () => testing(api).dashboardStats().ready >= 1, 'ready', 60_000);
     send(api, { type: 'sessionStart', title: 'timers' });
     send(api, { type: 'sessionStop' });

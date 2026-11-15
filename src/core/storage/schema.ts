@@ -2,9 +2,9 @@ import { DETECTION_METHODS, EVENT_TYPES, SESSION_STATUSES, SOURCE_TYPES } from '
 import { MAX_SESSION_FILES } from '../sessions/sessionManager';
 import type { ActivityEvent, ActivitySourceType, DevelopmentSession, GitContext, ReviewStatus } from '../types';
 
-/** Version of the persisted history (workspace Memento key `fileShake.history`). */
+/** Version of the persisted history (workspace Memento key `changescope.history`). */
 export const STORAGE_SCHEMA = 1;
-export const STORAGE_KEY = 'fileShake.history';
+export const STORAGE_KEY = 'changescope.history';
 
 /** Hard bounds on what is read back, whatever a stored value claims. */
 export const STORAGE_LIMITS = { EVENTS: 5000, SESSIONS: 200, PATH: 4096, ID: 64, TEXT: 200 } as const;

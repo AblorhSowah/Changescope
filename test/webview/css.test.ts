@@ -25,8 +25,8 @@ function block(selectorStart: string): string {
 
 describe('media/webview.css: the CSS contract (DESIGN 11)', () => {
   it('theme colour chains: user override -> contributed theme colour -> literal default', () => {
-    assert.ok(css.includes('var(--fs-edited-override, var(--vscode-fileshake-editedforeground, #3fb950))'.toLowerCase()), 'edited chain');
-    assert.ok(css.includes('var(--fs-referenced-override, var(--vscode-fileshake-referencedforeground, #e3b341))'.toLowerCase()), 'referenced chain');
+    assert.ok(css.includes('var(--fs-edited-override, var(--vscode-changescope-editedforeground, #3fb950))'.toLowerCase()), 'edited chain');
+    assert.ok(css.includes('var(--fs-referenced-override, var(--vscode-changescope-referencedforeground, #e3b341))'.toLowerCase()), 'referenced chain');
   });
 
   it('@keyframes fs-shake has five steps and drives translate + rotate from the custom properties', () => {

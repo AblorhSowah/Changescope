@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import {
   decorationOf,
   envPath,
@@ -20,7 +20,7 @@ import {
 } from './helpers';
 
 suite('Multi-root workspace (alpha + beta)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const alpha = (): string => envPath('FS_TEST_ALPHA');
   const beta = (): string => envPath('FS_TEST_BETA');
 

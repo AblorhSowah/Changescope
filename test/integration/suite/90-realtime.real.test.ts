@@ -1,14 +1,14 @@
-// Launch variant `real`: FILE_SHAKE_TEST is NOT set, so there is no fake clock and no test seam. The extension runs on the
+// Launch variant `real`: CHANGESCOPE_TEST is NOT set, so there is no fake clock and no test seam. The extension runs on the
 // system clock and real timers exactly as shipped: the self-stopping tick chain, the 400 ms reference debounce and the 150 ms
 // dirty-state parking timer are all real here. Everything else in the suite runs on a fake scheduler and cannot see them.
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { colorIdOf, decorationOf, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, rowOf, runNode, setConfig, trackedOf, typeInto, waitReal, workspaceDir } from './helpers';
 
 suite('Real clock, real timers (no test seam)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
 
   suiteSetup(async function () {
@@ -18,7 +18,7 @@ suite('Real clock, real timers (no test seam)', () => {
 
   teardown(async function () {
     this.timeout(60_000);
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     for (const d of vscode.workspace.textDocuments) {
       if (d.isDirty) {
         await vscode.window.showTextDocument(d, { preview: false });
@@ -27,14 +27,14 @@ suite('Real clock, real timers (no test seam)', () => {
     }
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     await waitReal(() => !vscode.workspace.textDocuments.some((d) => d.isDirty), 'all documents to be clean', 10_000);
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
   });
 
   test('the production configuration has no test seam and starts empty', () => {
     assert.equal(api.apiVersion, 1);
-    assert.equal(api.testing, undefined, 'FILE_SHAKE_TEST must not leak into the real-time launch');
+    assert.equal(api.testing, undefined, 'CHANGESCOPE_TEST must not leak into the real-time launch');
     assert.deepEqual(api.getRows(), []);
-    assert.equal(api.getStatusText(), '$(pulse) File Shake');
+    assert.equal(api.getStatusText(), '$(pulse) Changescope');
   });
 
   test('typing is classified by the REAL window focus, and the first keystroke is never mistaken for a reload', async function () {
@@ -69,10 +69,10 @@ suite('Real clock, real timers (no test seam)', () => {
     // status text and decoration are only ever updated by the tick chain / refresh, never by a read
     await waitReal(() => api.getStatusText().includes('deep.ts'), 'the status bar to name the file', 5_000);
     await waitReal(() => decorationOf(api, a) !== undefined, 'a native decoration for the active file', 5_000);
-    assert.equal(colorIdOf(decorationOf(api, a)), 'fileShake.editedForeground');
+    assert.equal(colorIdOf(decorationOf(api, a)), 'changescope.editedForeground');
     assert.equal(rowOf(api, key)?.phase, 'active');
 
-    await waitReal(() => api.getStatusText() === '$(pulse) File Shake', 'the status bar to fall back to the idle text', 8_000);
+    await waitReal(() => api.getStatusText() === '$(pulse) Changescope', 'the status bar to fall back to the idle text', 8_000);
     const sinceEdit = Date.now() - edited;
     assert.ok(sinceEdit >= 2300, `idle after ${sinceEdit} ms; idleTimeoutMs is 2500, so it cannot be earlier than that`);
     assert.ok(sinceEdit <= 5000, `idle only after ${sinceEdit} ms (tick period 200 ms): the tick chain is not keeping up`);

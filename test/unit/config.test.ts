@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG, DEFAULT_SENSITIVE_GLOBS, PROVIDER_ID_PATTERN, sanitizeConfig, toTrackerOptions } from '../../src/core/config';
-import type { FileShakeConfig } from '../../src/core/config';
+import type { ChangescopeConfig } from '../../src/core/config';
 import { DEFAULT_TRACKER_OPTIONS } from '../../src/core/activityTracker';
 import { K } from '../../src/core/constants';
 
@@ -28,7 +28,7 @@ const EXPECTED_DEFAULT_GLOBS = [
 /** DESIGN-0.3.0 section 12 (and the Host Builder's field names, recorded in its Deviations). */
 const EXPECTED_SENSITIVE_GLOBS = ['**/.env*', '**/*.pem', '**/*.key', '**/*.pfx', '**/*.p12', '**/id_rsa*', '**/id_ed25519*', '**/secrets/**', '**/.npmrc', '**/.netrc'];
 
-const KEYS: Array<keyof FileShakeConfig> = [
+const KEYS: Array<keyof ChangescopeConfig> = [
   'enable',
   'enableAnimation',
   'idleTimeoutMs',
@@ -148,7 +148,7 @@ describe('sanitizeConfig', () => {
   });
 
   describe('numeric ranges clamp', () => {
-    const ranges: Array<[keyof FileShakeConfig, number, number, number, boolean]> = [
+    const ranges: Array<[keyof ChangescopeConfig, number, number, number, boolean]> = [
       ['idleTimeoutMs', 500, 60000, 2500, false],
       ['windowMs', 500, 30000, 3000, false],
       ['maxFiles', 5, 200, 40, true],
@@ -199,7 +199,7 @@ describe('sanitizeConfig', () => {
   });
 
   describe('booleans', () => {
-    const boolKeys: Array<[keyof FileShakeConfig, boolean]> = [
+    const boolKeys: Array<[keyof ChangescopeConfig, boolean]> = [
       ['enable', true],
       ['enableAnimation', true],
       ['showWhenIdle', false],
@@ -255,7 +255,7 @@ describe('sanitizeConfig', () => {
   });
 
   describe('enums fall back to the default for anything that is not exactly an allowed value', () => {
-    const enums: Array<[keyof FileShakeConfig, string[], string]> = [
+    const enums: Array<[keyof ChangescopeConfig, string[], string]> = [
       ['viewMode', ['live', 'compact', 'impact'], 'live'],
       ['dependencyIndex', ['onDemand', 'off'], 'onDemand'],
       ['aiMode', ['local', 'assisted'], 'local'],
@@ -387,7 +387,7 @@ describe('sanitizeConfig', () => {
       assert.equal(sanitizeConfig(Object.freeze({ maxFiles: 11 })).maxFiles, 11);
     });
 
-    function assertValid(c: FileShakeConfig): void {
+    function assertValid(c: ChangescopeConfig): void {
       assert.equal(typeof c.enable, 'boolean');
       assert.equal(typeof c.enableAnimation, 'boolean');
       assert.equal(typeof c.showWhenIdle, 'boolean');

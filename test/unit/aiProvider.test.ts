@@ -152,7 +152,7 @@ describe('ProviderRegistry and isAiProvider', () => {
 });
 
 describe('buildSummaryInput: what a provider could ever receive', () => {
-  // the host matches the workspace-relative path against fileShake.sensitiveGlobs
+  // the host matches the workspace-relative path against changescope.sensitiveGlobs
   const matcher = createExcludeMatcher(['**/.env*', '**/*.pem', '**/secrets/**'], {});
   const sensitive = (key: string): boolean => matcher(rel(key));
 

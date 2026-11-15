@@ -30,7 +30,7 @@ function plainString(v: unknown): string | undefined {
   return typeof v === 'string' && v !== '' ? v : undefined;
 }
 
-/** Registers every File Shake command that is not part of the original four. */
+/** Registers every Changescope command that is not part of the original four. */
 export function registerCommands(d: CommandDeps): vscode.Disposable[] {
   const { activity, ai, dashboard, index, signal } = d;
 
@@ -38,7 +38,7 @@ export function registerCommands(d: CommandDeps): vscode.Disposable[] {
   const pickSession = async (placeHolder: string): Promise<string | undefined> => {
     const sessions = activity.sessions.list();
     if (sessions.length === 0) {
-      void vscode.window.showInformationMessage('File Shake: there are no sessions yet. Start one with "File Shake: Start Session".');
+      void vscode.window.showInformationMessage('Changescope: there are no sessions yet. Start one with "Changescope: Start Session".');
       return undefined;
     }
     const active = sessions.find((s) => s.status === 'active');
@@ -53,7 +53,7 @@ export function registerCommands(d: CommandDeps): vscode.Disposable[] {
   const pickProvider = async (placeHolder: string): Promise<string | undefined> => {
     const providers = ai.providers();
     if (providers.length === 0) {
-      void vscode.window.showInformationMessage('File Shake: no AI provider is registered. Providers come from other extensions.');
+      void vscode.window.showInformationMessage('Changescope: no AI provider is registered. Providers come from other extensions.');
       return undefined;
     }
     if (providers.length === 1 && providers[0] !== undefined) return providers[0].id;
@@ -65,71 +65,71 @@ export function registerCommands(d: CommandDeps): vscode.Disposable[] {
   };
 
   return [
-    vscode.commands.registerCommand('fileShake.openDashboard', () => dashboard.focus()),
-    vscode.commands.registerCommand('fileShake.openDashboardPanel', () => dashboard.openPanel()),
-    vscode.commands.registerCommand('fileShake.setViewMode', async () => {
-      const picked = await vscode.window.showQuickPick(MODES, { placeHolder: 'Choose how the File Shake dashboard looks' });
+    vscode.commands.registerCommand('changescope.openDashboard', () => dashboard.focus()),
+    vscode.commands.registerCommand('changescope.openDashboardPanel', () => dashboard.openPanel()),
+    vscode.commands.registerCommand('changescope.setViewMode', async () => {
+      const picked = await vscode.window.showQuickPick(MODES, { placeHolder: 'Choose how the Changescope dashboard looks' });
       if (picked !== undefined) await updateSetting('viewMode', picked.mode);
     }),
-    vscode.commands.registerCommand('fileShake.pause', () => activity.setPaused(true)),
-    vscode.commands.registerCommand('fileShake.resume', () => activity.setPaused(false)),
-    vscode.commands.registerCommand('fileShake.startSession', async () => {
+    vscode.commands.registerCommand('changescope.pause', () => activity.setPaused(true)),
+    vscode.commands.registerCommand('changescope.resume', () => activity.setPaused(false)),
+    vscode.commands.registerCommand('changescope.startSession', async () => {
       const title = await vscode.window.showInputBox({
-        title: 'Start a File Shake session',
+        title: 'Start a Changescope session',
         prompt: 'Session title (leave empty to use the date and time)',
         ignoreFocusOut: true,
       });
       if (title !== undefined) activity.startSession(title);
     }),
-    vscode.commands.registerCommand('fileShake.stopSession', () => {
-      if (activity.stopSession() === undefined) void vscode.window.showInformationMessage('File Shake: no session is running.');
+    vscode.commands.registerCommand('changescope.stopSession', () => {
+      if (activity.stopSession() === undefined) void vscode.window.showInformationMessage('Changescope: no session is running.');
     }),
-    vscode.commands.registerCommand('fileShake.renameSession', async () => {
+    vscode.commands.registerCommand('changescope.renameSession', async () => {
       const id = await pickSession('Which session do you want to rename?');
       const session = id === undefined ? undefined : activity.sessions.get(id);
       if (session === undefined) return;
       const title = await vscode.window.showInputBox({ title: 'Rename session', value: session.title, ignoreFocusOut: true });
       if (title !== undefined && title.trim() !== '') activity.renameSession(session.id, title);
     }),
-    vscode.commands.registerCommand('fileShake.exportSessionReport', async (arg?: unknown) => {
+    vscode.commands.registerCommand('changescope.exportSessionReport', async (arg?: unknown) => {
       const id = plainString(arg) ?? (await pickSession('Which session do you want to export?'));
       const report = id === undefined ? undefined : activity.sessionReport(id, 'markdown');
       if (report === undefined) return;
-      // opened as an unsaved document: nothing is written to disk by File Shake
+      // opened as an unsaved document: nothing is written to disk by Changescope
       const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: report });
       await vscode.window.showTextDocument(doc, { preview: false });
     }),
-    vscode.commands.registerCommand('fileShake.markAllReviewed', () => activity.markAllReviewed()),
-    vscode.commands.registerCommand('fileShake.clearHistory', async () => {
-      const yes = await d.confirm('Clear the File Shake activity history and completed sessions for this workspace?', 'Clear History');
+    vscode.commands.registerCommand('changescope.markAllReviewed', () => activity.markAllReviewed()),
+    vscode.commands.registerCommand('changescope.clearHistory', async () => {
+      const yes = await d.confirm('Clear the Changescope activity history and completed sessions for this workspace?', 'Clear History');
       if (yes) await activity.clearHistory();
     }),
-    vscode.commands.registerCommand('fileShake.rebuildDependencyIndex', () => index.rebuild()),
-    vscode.commands.registerCommand('fileShake.copyAgentHook', async () => {
+    vscode.commands.registerCommand('changescope.rebuildDependencyIndex', () => index.rebuild()),
+    vscode.commands.registerCommand('changescope.copyAgentHook', async () => {
       const path = await signal.prepare();
       const hook = signal.hook();
       if (path === undefined || hook === undefined) {
-        void vscode.window.showInformationMessage('File Shake: the agent signal file needs workspace storage. Open a folder first.');
+        void vscode.window.showInformationMessage('Changescope: the agent signal file needs workspace storage. Open a folder first.');
         return;
       }
       await vscode.env.clipboard.writeText(hook.settings);
       void vscode.window.showInformationMessage(
-        'File Shake: copied an experimental hook for Claude Code. Merge it into the "hooks" section of your own settings.json, and turn on fileShake.experimental.agentSignals. It needs jq and a POSIX shell, and only reports files the agent writes through its Edit and Write tools.',
+        'Changescope: copied an experimental hook for Claude Code. Merge it into the "hooks" section of your own settings.json, and turn on changescope.experimental.agentSignals. It needs jq and a POSIX shell, and only reports files the agent writes through its Edit and Write tools.',
       );
     }),
-    vscode.commands.registerCommand('fileShake.ai.setKey', async () => {
+    vscode.commands.registerCommand('changescope.ai.setKey', async () => {
       const id = await pickProvider('Which provider is the key for?');
-      if (id !== undefined && (await ai.setKey(id))) void vscode.window.showInformationMessage(`File Shake: key stored for ${id}.`);
+      if (id !== undefined && (await ai.setKey(id))) void vscode.window.showInformationMessage(`Changescope: key stored for ${id}.`);
     }),
-    vscode.commands.registerCommand('fileShake.ai.clearKey', async () => {
+    vscode.commands.registerCommand('changescope.ai.clearKey', async () => {
       const id = await pickProvider('Which provider key do you want to remove?');
       if (id === undefined) return;
       await ai.clearKey(id);
-      void vscode.window.showInformationMessage(`File Shake: key removed for ${id}.`);
+      void vscode.window.showInformationMessage(`Changescope: key removed for ${id}.`);
     }),
-    vscode.commands.registerCommand('fileShake.ai.resetConsent', async () => {
+    vscode.commands.registerCommand('changescope.ai.resetConsent', async () => {
       await ai.resetConsent();
-      void vscode.window.showInformationMessage('File Shake: AI consent was reset. You will be asked again before anything is shared.');
+      void vscode.window.showInformationMessage('Changescope: AI consent was reset. You will be asked again before anything is shared.');
     }),
   ];
 }

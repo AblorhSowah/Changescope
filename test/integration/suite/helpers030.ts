@@ -1,21 +1,21 @@
 // Helpers of the 0.3.0 integration suites (activity history, sessions, dashboard, index, AI, agent signal).
 // Same rules as helpers.ts: time is the fake clock, real asynchrony is awaited by re-reading state, no fixed sleeps.
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import type { AiProvider, AiRequest } from '../../../src/core/ai/provider';
 import type { ActivityEvent, DashboardState, DevelopmentSession } from '../../../src/core/types';
 import { externalWrite, keyOf, resetConfig, resetState, testing, waitUntil } from './helpers';
 
-export const dashboardState = (api: FileShakeApi): DashboardState => api.getDashboardState();
+export const dashboardState = (api: ChangescopeApi): DashboardState => api.getDashboardState();
 
-export const eventsFor = (api: FileShakeApi, key: string): ActivityEvent[] => api.getActivityEvents().filter((e) => e.filePath === key);
+export const eventsFor = (api: ChangescopeApi, key: string): ActivityEvent[] => api.getActivityEvents().filter((e) => e.filePath === key);
 
-export const lastEventFor = (api: FileShakeApi, key: string): ActivityEvent | undefined => eventsFor(api, key).at(-1);
+export const lastEventFor = (api: ChangescopeApi, key: string): ActivityEvent | undefined => eventsFor(api, key).at(-1);
 
-export const activeSession = (api: FileShakeApi): DevelopmentSession | undefined => api.getSessions().find((s) => s.status === 'active');
+export const activeSession = (api: ChangescopeApi): DevelopmentSession | undefined => api.getSessions().find((s) => s.status === 'active');
 
 /** Sends a message as the dashboard webview would. */
-export const send = (api: FileShakeApi, raw: unknown): void => testing(api).dashboardMessage(raw);
+export const send = (api: ChangescopeApi, raw: unknown): void => testing(api).dashboardMessage(raw);
 
 /** Runs a command and waits for its promise. */
 export const run = async (id: string, ...args: unknown[]): Promise<void> => {
@@ -26,13 +26,13 @@ export const run = async (id: string, ...args: unknown[]): Promise<void> => {
  * Puts history, sessions, pause state and the 0.3.0 settings back to neutral. History is shared by every suite of a
  * launch (one extension instance), so each suite starts from an empty one and looks only at files of its own.
  */
-export async function resetHistory(api: FileShakeApi): Promise<void> {
+export async function resetHistory(api: ChangescopeApi): Promise<void> {
   const t = testing(api);
-  await run('fileShake.resume');
-  if (activeSession(api) !== undefined) await run('fileShake.stopSession');
+  await run('changescope.resume');
+  if (activeSession(api) !== undefined) await run('changescope.stopSession');
   t.overrideConfirm(() => Promise.resolve(true));
   try {
-    await run('fileShake.clearHistory');
+    await run('changescope.clearHistory');
   } finally {
     t.overrideConfirm(undefined);
   }
@@ -40,7 +40,7 @@ export async function resetHistory(api: FileShakeApi): Promise<void> {
 }
 
 /** Drops the dialog and notification overrides a test installed. (resetHistory leaves them alone: a test may call it mid-way.) */
-export function resetOverrides(api: FileShakeApi): void {
+export function resetOverrides(api: ChangescopeApi): void {
   const t = testing(api);
   t.overrideCollisionNotify(undefined);
   t.overrideConsentPrompt(undefined);
@@ -48,7 +48,7 @@ export function resetOverrides(api: FileShakeApi): void {
 }
 
 /** resetConfig + resetState + resetHistory + resetOverrides, in the order the suites need. */
-export async function resetAll(api: FileShakeApi): Promise<void> {
+export async function resetAll(api: ChangescopeApi): Promise<void> {
   resetOverrides(api);
   await resetConfig();
   await resetState(api);
@@ -57,16 +57,16 @@ export async function resetAll(api: FileShakeApi): Promise<void> {
 }
 
 /** Waits until the history holds more events for `key` than `before` (a real watcher event was recorded). */
-export async function waitForEvent(api: FileShakeApi, key: string, before: number, what = 'an event'): Promise<ActivityEvent> {
+export async function waitForEvent(api: ChangescopeApi, key: string, before: number, what = 'an event'): Promise<ActivityEvent> {
   await waitUntil(api, () => api.getActivityEvents().filter((e) => e.filePath === key).reduce((n, e) => n + e.count, 0) > before, `${what} for ${key}`, 60_000);
   return lastEventFor(api, key) as ActivityEvent;
 }
 
 /** Total number of recorded occurrences for a file (coalesced events count every occurrence). */
-export const occurrences = (api: FileShakeApi, key: string): number => eventsFor(api, key).reduce((n, e) => n + e.count, 0);
+export const occurrences = (api: ChangescopeApi, key: string): number => eventsFor(api, key).reduce((n, e) => n + e.count, 0);
 
-/** Writes `content` from a separate process and waits until File Shake recorded the change. */
-export async function externalChange(api: FileShakeApi, file: string, content: string): Promise<ActivityEvent> {
+/** Writes `content` from a separate process and waits until Changescope recorded the change. */
+export async function externalChange(api: ChangescopeApi, file: string, content: string): Promise<ActivityEvent> {
   const key = keyOf(file);
   const before = occurrences(api, key);
   await externalWrite(file, content);
@@ -97,7 +97,7 @@ export function mockProvider(id = 'acme.test', label = 'Acme Test'): MockProvide
 }
 
 /** Asks for a summary through the dashboard message and waits until the state carries a newer one. */
-export async function summarizeNow(api: FileShakeApi): Promise<NonNullable<DashboardState['summary']>> {
+export async function summarizeNow(api: ChangescopeApi): Promise<NonNullable<DashboardState['summary']>> {
   testing(api).advance(1); // a new clock value, so a new summary is recognisable
   const before = dashboardState(api).summary?.at ?? -1;
   send(api, { type: 'summarize' });

@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { sanitizeConfig } from '../core/config';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 
-const SECTION = 'fileShake';
+const SECTION = 'changescope';
 
-export function readConfig(): FileShakeConfig {
+export function readConfig(): ChangescopeConfig {
   const c = vscode.workspace.getConfiguration(SECTION);
   const raw: Record<string, unknown> = {
     enable: c.get('enable'),
@@ -45,7 +45,7 @@ export function onDidChangeConfig(cb: () => void): vscode.Disposable {
   });
 }
 
-/** Writes `fileShake.<name>` in the scope where it is currently defined (default: user settings). Resolves false when no scope accepted it. */
+/** Writes `changescope.<name>` in the scope where it is currently defined (default: user settings). Resolves false when no scope accepted it. */
 export async function updateSetting(name: string, value: unknown): Promise<boolean> {
   const folder = vscode.workspace.workspaceFolders?.[0];
   const c = vscode.workspace.getConfiguration(SECTION, folder?.uri);
@@ -65,7 +65,7 @@ export async function updateSetting(name: string, value: unknown): Promise<boole
   return false;
 }
 
-/** Flips `fileShake.enable` in the scope where it is currently defined (default: user settings). */
+/** Flips `changescope.enable` in the scope where it is currently defined (default: user settings). */
 export async function toggleEnabled(): Promise<void> {
   const c = vscode.workspace.getConfiguration(SECTION, vscode.workspace.workspaceFolders?.[0]?.uri);
   await updateSetting('enable', !(c.get<boolean>('enable') ?? true));

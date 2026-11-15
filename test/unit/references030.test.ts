@@ -1,5 +1,5 @@
 // 0.3.0 additions to files that already have 0.2.0 tests: ReferenceTarget.kinds (DESIGN-0.3.0 7.1) and the two
-// intensity helpers behind fileShake.animationIntensity (section 12).
+// intensity helpers behind changescope.animationIntensity (section 12).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { run } from '../support/analyze';

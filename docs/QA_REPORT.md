@@ -1,4 +1,4 @@
-# QA Report - File Shake 0.1.0 (Tester)
+# QA Report - Changescope 0.1.0 (Tester)
 
 Status: **Phase 2 complete** (adversarial reads, mutation sampling, package audit, `.vsix` install check, real-time variant).
 Phase 2 found five defects (QA-002..QA-006). QA-003..QA-006 are fixed and verified in real VS Code; QA-002 is fixed by reasoning only (see 3).
@@ -17,7 +17,7 @@ Everything below was actually run on this machine (macOS 24.2, Node v24.20.0, VS
 | Integration, dev build, real VS Code 1.129.1, all four variants | single **86 pass**, multi **25**, none **24**, real **6**; 0 fail; 1 pending (QA-002, see 3). Two consecutive full runs. |
 | Integration against the installed `.vsix` (`FS_INSTALLED_VSIX`) | same four variants, **all pass**; two consecutive full runs on the final package |
 | Package audit | `file-shake-0.1.0.vsix`: 10 files, 52 KB; no `.map`, `src`, `test`, `node_modules`, `.ts` |
-| Standalone CLI install (isolated user-data and extensions dirs) | `Extension 'file-shake-0.1.0.vsix' was successfully installed.`; `--list-extensions --show-versions` prints `file-shake.file-shake@0.1.0` |
+| Standalone CLI install (isolated user-data and extensions dirs) | `Extension 'file-shake-0.1.0.vsix' was successfully installed.`; `--list-extensions --show-versions` prints `changescope.changescope@0.1.0` |
 | Mutation sampling (scratch copies, never `src/`) | unit level: 76 mutants, 75 killed (72 at first, 3 more after the tests were strengthened), 1 survivor that is equivalent (`>=` vs `>` at exactly `idleTimeoutMs`, where the intensity formula is already 0). Integration level: partial, see 6. |
 
 Open bugs: **none known**. Unverified: QA-002, Windows/Linux, VS Code 1.85, visible rendering in light/dark/HC themes (see 5).
@@ -71,7 +71,7 @@ Test-side corrections made in Phase 2 (not product bugs):
 * `75-adversarial.single` QA-006: the wait for "reload events classified" now also accepts reason `burst`, which is the correct outcome once the flood is suppressed.
 
 Observation, not a bug: the test host prints `rejected promise not handled within 1 second: cannot open file .../scratch-rename-4/after.ts`
-after the rename test. File Shake never calls `openTextDocument`; this is a built-in extension (TypeScript "update imports on file
+after the rename test. Changescope never calls `openTextDocument`; this is a built-in extension (TypeScript "update imports on file
 move") opening the renamed file after the test removed it. Harmless noise.
 
 ## 4. Test inventory
@@ -123,7 +123,7 @@ Counts are test cases as reported by `node --test` (unit, webview) or defined `t
 
 | File | Variant | Cases | What it asserts |
 |---|---|---|---|
-| `01-activation.test.ts` | all | 12 | activation, exports, commands incl. `fileShake.view.focus`, empty model, setting defaults served by VS Code, opening files is not activity, view resolves + posts `ready`, toggle both ways, clear, debug info* |
+| `01-activation.test.ts` | all | 12 | activation, exports, commands incl. `changescope.view.focus`, empty model, setting defaults served by VS Code, opening files is not activity, view resolves + posts `ready`, toggle both ways, clear, debug info* |
 | `10-editing.single.test.ts` | single | 23 | typing -> `edited/you` row, `●` + ThemeColor + tooltip, status text, `a.ts` -> `b.ts` (count 4) / `c.ts` (1) yellow with `4`/`1` badges, green wins, Python and SCSS targets, intensity 0.2835 / 0.5905 / 0.9639 on the fake clock, idle at exactly 2500 ms and removal at 6500 ms, unfocused window -> `external`, `WorkspaceEdit` -> `external`, undo -> `you`, save is not activity, untitled/excluded ignored, clear, symlink target, file outside the workspace, 200 rapid edits, odd file names |
 | `20-watcher.single.test.ts` | single | 12 | disk write/create -> `external` row + `◆` + 0.8647, references from an externally written file, delete, folder delete, rename, 60-file burst suppressed, directory create ignored, excluded paths, > 512 KB file and NUL file tracked but not scanned, reload de-duplication |
 | `30-settings.single.test.ts` | single | 13 | live `enableAnimation`, colours (valid/invalid), `enable`, `idleTimeoutMs` (and clamp), `sensitivity`, `showWhenIdle`, `decorateFolders`, `detectExternalEdits`, `excludeGlobs`, `maxFiles`, junk values, concurrent updates |
@@ -148,11 +148,11 @@ Totals after Phase 2: unit and webview 1284 (the table above lists the Phase 1 c
 * **QA-002** is fixed by reasoning; its reproducer skips itself on VS Code 1.129.1 because the text model outlives the editor (1 pending test).
 * **Skipped by design:** "showDebugInfo writes JSON" (the Output channel text cannot be read through the API; the command runs without error).
   "Deactivate / dispose twice" (DESIGN 12, row I) cannot be driven through the public API; it is covered statically (`staticChecks.test.ts`), not dynamically.
-  The former "zero timers when idle" skip is gone: `FileShakeApi.testing.pendingTimers()` exists and the test runs.
+  The former "zero timers when idle" skip is gone: `ChangescopeApi.testing.pendingTimers()` exists and the test runs.
 * **Only VS Code 1.129.1 on macOS was run.** The engine floor (1.85.0) was not launched (`VSCODE_TEST_VERSION=1.85.0` re-runs the suite on it, about a 124 MB download).
   Windows and Linux were not run; Windows behaviour is covered at the key/path level in unit tests only.
 * **Not published.** `package.json` has placeholder `publisher` (`file-shake`) and `repository.url` (`.../OWNER/file-shake.git`); see `docs/BUILD_STATUS.md` "Release checklist".
-* Writes to a workspace folder in the first few hundred milliseconds after it is added can be missed. That is VS Code's asynchronous watcher start, not File Shake (see 3).
+* Writes to a workspace folder in the first few hundred milliseconds after it is added can be missed. That is VS Code's asynchronous watcher start, not Changescope (see 3).
 
 ## 6. Mutation sampling (preliminary Phase 2 item, done in a scratch copy under the session scratchpad)
 
@@ -202,7 +202,7 @@ so every run had two baseline failures. Re-checked afterwards with the fixtures 
 
 ## 8. What I need from the Builder
 
-1. Optional but requested: `FileShakeApi.testing.pendingTimers(): number` (see 5).
+1. Optional but requested: `ChangescopeApi.testing.pendingTimers(): number` (see 5).
 2. Nothing blocks Phase 2. If any module is renamed or any `K` value changes, tell me: the literal-value tests (`constants.test.ts`, `manifest.test.ts`) will fail by design.
 3. Please keep `lastSeq`-style details and the Deviations list current: several tests read DESIGN.md's `## Deviations` (markdown support) and the manifest.
 
@@ -224,7 +224,7 @@ See `test/README.md`. Short form: `npm run test:unit`; `npm run lint`; `FS_VSCOD
 | Integration, standard launch, single | 160 pass, 2 pending, 4 fail: the four open bugs below |
 | Integration, standard launch, multi / none / real | 28 pass / 30 pass and 1 fail (QA-101) / 6 pass |
 | Integration, installed `.vsix` | single 159 pass, 2 pending, 5 fail (the four bugs and the focus-dependent "undo" test); multi 28 pass; none 30 pass, 1 fail (QA-101); real 6 pass |
-| Package | `file-shake-0.3.0.vsix`, 13 files, 113 KB; the audit tests ran; isolated CLI install lists `file-shake.file-shake@0.3.0` |
+| Package | `changescope-0.3.0.vsix`, 13 files, 113 KB; the audit tests ran; isolated CLI install lists `changescope.changescope@0.3.0` |
 | Open bugs | (historic, at the end of round 2) QA-101 to QA-111. **All eleven were fixed by the Host Builder and verified in round 3: see the last section of this file** |
 | Not verified | Git lists in a host, VS Code 1.85, Windows, Linux, GitHub Actions, real restart persistence, the dashboard in a real webview (details in R2.9) |
 
@@ -287,7 +287,7 @@ IDs continue the table of section 3. All statuses are **open**. QA-102 to QA-107
 
 | ID | Severity | Status | Repro / test | Expected | Actual |
 |---|---|---|---|---|---|
-| QA-101 | medium (privacy) | fixed (round 3) | **Confirmed in real VS Code in round 2 (R2.4).** Found by reading `src/vscode/activityService.ts` (`sessionReport`) and `src/vscode/dashboardProvider.ts` (`summarize`): both build the display path as `d.dir === '' ? d.name : d.dir + '/' + d.name` from `toDisplayPath(key, roots)`. For a file outside every workspace folder `toDisplayPath` returns the ABSOLUTE folder as `dir` (probe: `/Users/frank/other/secret.ts` -> `"/Users/frank/other/secret.ts"`). File Shake tracks such files (the 0.2.0 "(outside workspace)" section). To reproduce in a host: edit a file outside the workspace folder, start a session, run "Export Session Report"; or set `ai.mode` assisted with a registered provider and press Summarize. Pinned by `dashboardModel.test.ts` ("for a file OUTSIDE every workspace folder ..."); confirmed by three integration tests (R2.4). | DESIGN-0.3.0 5: the report "uses display paths (workspace relative), never absolute paths"; section 9 and `PAYLOAD_DESCRIPTION`: the request carries "workspace-relative paths". | The report and the AI request contain the absolute path (home folder name and all) of any tracked file outside the workspace. |
+| QA-101 | medium (privacy) | fixed (round 3) | **Confirmed in real VS Code in round 2 (R2.4).** Found by reading `src/vscode/activityService.ts` (`sessionReport`) and `src/vscode/dashboardProvider.ts` (`summarize`): both build the display path as `d.dir === '' ? d.name : d.dir + '/' + d.name` from `toDisplayPath(key, roots)`. For a file outside every workspace folder `toDisplayPath` returns the ABSOLUTE folder as `dir` (probe: `/Users/frank/other/secret.ts` -> `"/Users/frank/other/secret.ts"`). Changescope tracks such files (the 0.2.0 "(outside workspace)" section). To reproduce in a host: edit a file outside the workspace folder, start a session, run "Export Session Report"; or set `ai.mode` assisted with a registered provider and press Summarize. Pinned by `dashboardModel.test.ts` ("for a file OUTSIDE every workspace folder ..."); confirmed by three integration tests (R2.4). | DESIGN-0.3.0 5: the report "uses display paths (workspace relative), never absolute paths"; section 9 and `PAYLOAD_DESCRIPTION`: the request carries "workspace-relative paths". | The report and the AI request contain the absolute path (home folder name and all) of any tracked file outside the workspace. |
 | QA-102 | low | fixed (round 3) | `depGraph.test.ts` > "[QA-102] dependants() with an unbounded depth or node limit (Infinity) finds the dependants" (todo). `dependants(k, Infinity, 200)` returns nothing; `dependants(k, 3, Infinity)` returns nothing and `truncated: true`. | An unbounded limit means unbounded (or is rejected); never "nothing found" or a false "truncated". | `Number.isFinite` guards turn Infinity into 0. Not reachable today (callers pass 3 and 200). |
 | QA-103 | low | fixed (round 3) | `depGraph.test.ts` > "[QA-103] ..." (todo). `setFile` with two entries for one target, `export` then `import`, keeps `export`; the other order keeps `import`. | DESIGN 7.1: `export` only when every statement is a re-export, so the result is `import` in both orders. | The first entry's type wins. Not reachable through `targetsFromReference` (targets are unique there). |
 | QA-104 | low | fixed (round 3) | `dashboardProtocol.test.ts` > "[QA-104] a sparse array ..." (todo). `parseDashboardHostMessage` with `files: new Array(2)` returns a state whose `files` has holes. | Malformed messages are rejected (the app would throw on `row.id` of `undefined`). | `list()` uses `Array.prototype.map`, which skips holes, so the item validator never runs. Structured clone keeps holes, JSON turns them into `null` (rejected), so only a host bug could send one. |
@@ -301,7 +301,7 @@ Observations that are not bugs (recorded so they are not lost):
 
 * **Contract difference, not in the Deviations list.** `EventStore.add` does not merge a new change into the newest event of a file when that event is already `reviewed` (the change starts a new `unreviewed` event). DESIGN-0.3.0 4.3 lists no such condition. It is sensible (otherwise a change made after review would be silently counted as reviewed) and the tests pin it (`eventStore.test.ts` "a change after the file was reviewed is a new event"), but the contract should say so.
 * `buildDashboardState` passes `settings`, `index` and `summary.at` through unchanged, although its comment says every number is finite. Today the values come from the sanitised config, so a non-finite number cannot occur; if one did, the webview would reject the whole state and stay on "Loading activity.".
-* `fileShake.exportSessionReport` accepts a session id as an argument from any caller (`executeCommand`); it only reads. Fine.
+* `changescope.exportSessionReport` accepts a session id as an argument from any caller (`executeCommand`); it only reads. Fine.
 
 ## R1.5 Mutation sanity (scratch copy under the session scratchpad, never `src/`)
 
@@ -338,7 +338,7 @@ Also written incrementally; each step is recorded when it is finished.
 ## R2.1 Pins changed (each one pins the new documented value; nothing was weakened)
 
 After the pin updates `npm run test:unit` reports tests 2409, pass 2403, fail 0, skipped 0, todo 6. The 12 skipped tests of round 1 were
-the `.vsix` audit tests; they now run because `file-shake-0.3.0.vsix` exists in the repository root (rebuilt later in this round, see R2.5).
+the `.vsix` audit tests; they now run because `changescope-0.3.0.vsix` exists in the repository root (rebuilt later in this round, see R2.5).
 
 | File | Test | Old pin | New pin |
 |---|---|---|---|
@@ -349,14 +349,14 @@ the `.vsix` audit tests; they now run because `file-shake-0.3.0.vsix` exists in 
 | `test/unit/manifest.test.ts` | "identity" | version `0.2.0` | `0.3.0` |
 | `test/unit/manifest.test.ts` | "npm run typecheck" | three `tsc` projects | four (adds `src/dashboard/tsconfig.json`) |
 | `test/unit/manifest.test.ts` | "npm run package" | `vsce package --no-dependencies --allow-missing-repository` | `vsce package --no-dependencies` |
-| `test/unit/manifest.test.ts` | "the four commands with the File Shake category" | 4 commands | exactly 20 (4 old, all still present, plus the 16 of DESIGN-0.3.0 section 12), each in the File Shake category; icons on the four view-title commands |
-| `test/unit/manifest.test.ts` | "view title menu offers clear + toggle for this view only" | 2 entries | 6 entries (Explorer: clear, toggle; dashboard: pause, resume with `fileShake.paused` conditions, mark all reviewed, open in editor) and the command palette entries for pause and resume |
+| `test/unit/manifest.test.ts` | "the four commands with the Changescope category" | 4 commands | exactly 20 (4 old, all still present, plus the 16 of DESIGN-0.3.0 section 12), each in the Changescope category; icons on the four view-title commands |
+| `test/unit/manifest.test.ts` | "view title menu offers clear + toggle for this view only" | 2 entries | 6 entries (Explorer: clear, toggle; dashboard: pause, resume with `changescope.paused` conditions, mark all reviewed, open in editor) and the command palette entries for pause and resume |
 | `test/unit/manifest.test.ts` | "exactly the documented 15 settings" | 15 | 28, with defaults equal to `DEFAULT_CONFIG`, numeric ranges, three enums with descriptions, the ten-glob `sensitiveGlobs` default, the `ai.provider` pattern equal to core's rule, privacy defaults (AI local, agent signal off), every setting at `window` scope |
 | `test/unit/manifest.test.ts` | ".vscodeignore excludes everything and un-ignores exactly the shipped files" | `!media/**`, no `dashboard.js` | adds `!dist/dashboard.js` and `!media/*` (and asserts `!media/**` is absent and no screenshots line), per the Dashboard Builder's Deviation (`vsce` cannot override a matching `!` line) |
 | `test/unit/manifest.test.ts` | "CHANGELOG.md exists and mentions 0.2.0" | `0.2.0` heading | `0.3.0`, `0.2.0`, `0.1.0` headings in that order |
-| `test/unit/manifest.test.ts` | views, marketplace keywords, media files | | adds the Activity Bar container and `fileShake.dashboard` view, keywords `dashboard`, `git`, `dependencies`, `impact`, `sessions`, and the existence of `media/dashboard.css` and `media/activity.svg` (monochrome `currentColor`) |
-| `test/unit/vsix.test.ts` | file name, version, file list | `file-shake-0.2.0.vsix`, 10 files, `Version="0.2.0"` | `file-shake-0.3.0.vsix`, 13 files (adds `dist/dashboard.js`, `media/dashboard.css`, `media/activity.svg`), `Version="0.3.0"`; adds a `vsce ls` cross-check, `dashboard.js` self-containment, no `url()` in the dashboard CSS, packaged dashboard files equal the repository files |
-| `test/integration/suite/01-activation.test.ts` | "fileShake.showDebugInfo writes the documented JSON" | `extensionVersion === '0.2.0'` | `'0.3.0'` |
+| `test/unit/manifest.test.ts` | views, marketplace keywords, media files | | adds the Activity Bar container and `changescope.dashboard` view, keywords `dashboard`, `git`, `dependencies`, `impact`, `sessions`, and the existence of `media/dashboard.css` and `media/activity.svg` (monochrome `currentColor`) |
+| `test/unit/vsix.test.ts` | file name, version, file list | `file-shake-0.2.0.vsix`, 10 files, `Version="0.2.0"` | `changescope-0.3.0.vsix`, 13 files (adds `dist/dashboard.js`, `media/dashboard.css`, `media/activity.svg`), `Version="0.3.0"`; adds a `vsce ls` cross-check, `dashboard.js` self-containment, no `url()` in the dashboard CSS, packaged dashboard files equal the repository files |
+| `test/integration/suite/01-activation.test.ts` | "changescope.showDebugInfo writes the documented JSON" | `extensionVersion === '0.2.0'` | `'0.3.0'` |
 | `test/README.md` | vsix row | 10-file list of 0.2.0 | 13-file list of 0.3.0 |
 
 `grep -rn "0\.2\.0" test/` finds nothing else that pins a version (the remaining hits are comments and test names about 0.2.0 history).
@@ -387,8 +387,8 @@ summary said "85 passing (2h)"). It was not a product failure; the rerun under `
 
 | ID | Severity | Status | Failing test (real VS Code 1.129.1) | Expected | Actual |
 |---|---|---|---|---|---|
-| QA-101 (confirmed) | medium (privacy) | fixed (round 3) | `82-activity.single` > "[QA-101] the report of a session that touched a file OUTSIDE the workspace has no absolute path either"; `84-ai-agents.single` > "[QA-101] a file outside the workspace is sent as a display path, not as an absolute path"; `65-dashboard.none` > "[QA-101] with no folder open the exported report has no absolute path". Repro: type in a file outside the workspace folder (or open no folder at all), start a session, "File Shake: Export Session Report"; or register an AI provider, set `ai.mode` assisted and press Summarize. | Workspace-relative display paths only (DESIGN-0.3.0 5 and 9). | The report and the provider request contain the absolute path, for example `/private/tmp/fs-aTHLaC/outside/o1.ts` (a home folder name on a real machine). With NO folder open every path is absolute, so every report and every request carries absolute paths. |
-| QA-110 | low | fixed (round 3) | `84-ai-agents.single` > "[QA-110] a signal file that is emptied and refilled with a LONGER line than before is still read from the start". Repro: let File Shake read a line from `agent-events.jsonl`, then replace the file by one longer line in one go. | The new line is read (the file was emptied: DESIGN-0.3.0 9 says the file is read from the last offset and may be truncated). | Timed out after 30 s: `SignalFileAdapter.read` only detects an emptied file when `size < offset`; a refill that is as long as or longer than what was read leaves the stored offset inside the new line, so the line is decoded from the middle and skipped. (A refill that is SHORTER works: the sibling test passes.) |
+| QA-101 (confirmed) | medium (privacy) | fixed (round 3) | `82-activity.single` > "[QA-101] the report of a session that touched a file OUTSIDE the workspace has no absolute path either"; `84-ai-agents.single` > "[QA-101] a file outside the workspace is sent as a display path, not as an absolute path"; `65-dashboard.none` > "[QA-101] with no folder open the exported report has no absolute path". Repro: type in a file outside the workspace folder (or open no folder at all), start a session, "Changescope: Export Session Report"; or register an AI provider, set `ai.mode` assisted and press Summarize. | Workspace-relative display paths only (DESIGN-0.3.0 5 and 9). | The report and the provider request contain the absolute path, for example `/private/tmp/fs-aTHLaC/outside/o1.ts` (a home folder name on a real machine). With NO folder open every path is absolute, so every report and every request carries absolute paths. |
+| QA-110 | low | fixed (round 3) | `84-ai-agents.single` > "[QA-110] a signal file that is emptied and refilled with a LONGER line than before is still read from the start". Repro: let Changescope read a line from `agent-events.jsonl`, then replace the file by one longer line in one go. | The new line is read (the file was emptied: DESIGN-0.3.0 9 says the file is read from the last offset and may be truncated). | Timed out after 30 s: `SignalFileAdapter.read` only detects an emptied file when `size < offset`; a refill that is as long as or longer than what was read leaves the stored offset inside the new line, so the line is decoded from the middle and skipped. (A refill that is SHORTER works: the sibling test passes.) |
 | QA-111 | medium-low | fixed (round 3) | `83-intelligence.single` > "[QA-111] a file that is deleted and created again (a tool replacing it) keeps its importers in the index". Repro: build the index, delete `lib/util.ts` (imported by 4 files), create it again with the same content, select it in the dashboard. | `importedBy` still lists the 4 importers: their text did not change. | `importedBy` is empty and impact says "No dependants were found." (a low estimate, not an error message). `DependencyIndex.onFileDeleted` calls `graph.removeUnder(key)`, which drops every edge pointing at the file, and the re-creation only re-analyses the file itself, never its importers. Atomic replace (`git checkout`, `sed -i`, some formatters) deletes and creates a file. |
 
 ## R2.5 Integration suites added (real VS Code 1.129.1; mocha `tdd`; no fixed sleeps; fake clock through `api.testing`)
@@ -410,12 +410,12 @@ summary said "85 passing (2h)"). It was not a product failure; the rerun under `
 ```
 npm run lint                                                    # exit 0
 npm run test:unit                                               # tests 2409, pass 2403, fail 0, skipped 0, todo 6
-node esbuild.mjs --production && npm run package                # file-shake-0.3.0.vsix, 13 files, 113.03 KB
+node esbuild.mjs --production && npm run package                # changescope-0.3.0.vsix, 13 files, 113.03 KB
 npm run test:unit                                               # again, with the vsix present: same counts; the .vsix audit tests RAN (skipped 0)
 FS_VSCODE_EXE=".../Electron" npm run test:integration           # (below)
-FS_INSTALLED_VSIX=$PWD/file-shake-0.3.0.vsix FS_VSCODE_EXE=".../Electron" node --import tsx test/integration/runTest.ts
-env <scrubbed> ".../bin/code" --user-data-dir <tmp>/ud --extensions-dir <tmp>/ext --install-extension file-shake-0.3.0.vsix   # "successfully installed"
-env <scrubbed> ".../bin/code" ... --list-extensions --show-versions    # file-shake.file-shake@0.3.0
+FS_INSTALLED_VSIX=$PWD/changescope-0.3.0.vsix FS_VSCODE_EXE=".../Electron" node --import tsx test/integration/runTest.ts
+env <scrubbed> ".../bin/code" --user-data-dir <tmp>/ud --extensions-dir <tmp>/ext --install-extension changescope-0.3.0.vsix   # "successfully installed"
+env <scrubbed> ".../bin/code" ... --list-extensions --show-versions    # changescope.changescope@0.3.0
 ```
 
 Integration, dev build, standard launch (`--disable-extensions`), one full run (all variants): single 158 pass / 2 pending / 6 fail; multi 28 pass; none 30 pass / 1 fail; real 6 pass.
@@ -450,7 +450,7 @@ Round 1 (88 mutants, 87 killed first time, 1 killed after strengthening) plus ro
 
 ## R2.9 Not run or not verified (stated plainly)
 
-* **Git lists were not verified in a real host.** The test `83-intelligence.single` > "with Git available ..." ran but **skipped itself** in every launch, including the installed-`.vsix` launch that does not pass `--disable-extensions`, with the printed reason: `the repository did not appear (File Shake reports: unavailable, "The Git extension is disabled or its API is not available.")`. The standard launch sets `git.enabled` to false and starts with `--disable-extensions`; I set `git.enabled` true at run time and called `git.openRepository`, but the built-in Git extension did not offer its API here (the machine has git 2.15.0, which may be too old for it; I did not establish the cause). What is verified: File Shake degrades to `unavailable` with the reason, `disabled` by its own setting, sessions work without a Git context. What is not: branch and commit display, staged / changes / untracked lists, the 200 cap, and the head-change relabelling to "Git" (the Host Builder's report says its scratch smoke test saw them; there is no permanent test that ran).
+* **Git lists were not verified in a real host.** The test `83-intelligence.single` > "with Git available ..." ran but **skipped itself** in every launch, including the installed-`.vsix` launch that does not pass `--disable-extensions`, with the printed reason: `the repository did not appear (Changescope reports: unavailable, "The Git extension is disabled or its API is not available.")`. The standard launch sets `git.enabled` to false and starts with `--disable-extensions`; I set `git.enabled` true at run time and called `git.openRepository`, but the built-in Git extension did not offer its API here (the machine has git 2.15.0, which may be too old for it; I did not establish the cause). What is verified: Changescope degrades to `unavailable` with the reason, `disabled` by its own setting, sessions work without a Git context. What is not: branch and commit display, staged / changes / untracked lists, the 200 cap, and the head-change relabelling to "Git" (the Host Builder's report says its scratch smoke test saw them; there is no permanent test that ran).
 * **VS Code 1.85 (the engine floor)** was not run: no 1.85 binary is cached under `.vscode-test/` (the directory does not exist) and I did not download one. Everything ran on VS Code 1.129.1.
 * **Windows and Linux** were not run. **GitHub Actions** (`.github/workflows/ci.yml`, `release.yml`) never ran.
 * **Real restart persistence** was not verified: the Memento of an extension-test host is in memory, so only `flushHistory` / `reloadHistory` (a write and a read back inside one session) were tested. That the stored value survives a real window close was not tested.
@@ -477,7 +477,7 @@ Written incrementally. Numbers below are copied from the command output; anythin
 | Integration, standard launch, final full run (VS Code kept in front, machine recovered) | **single 169 pass, 2 pending, 0 fail; multi 28 pass; none 31 pass (QA-101 passes); real 6 pass; all four variants passed** |
 | Integration, earlier full runs in round 3 | run 1: single 161 / 2 pending / 7 fail (4 were my fixture mistake, 3 are timing and focus, R3.6); run 2: single 166 / 2 pending / 3 fail (focus and two timing tests while the machine was swapping, R3.7). multi, none, real passed in both |
 | Installed `.vsix` (production bundle, built-in extensions not disabled) | final run **single 169 pass, 2 pending, 0 fail; multi 28; none 31; real 6**; an earlier run during the swap storm took 42 minutes and failed 4 timing and focus tests (R3.7). The Git-lists test skipped itself again (R3.9) |
-| Isolated CLI install | `Extension 'file-shake-0.3.0.vsix' was successfully installed.`; `--list-extensions --show-versions` prints `file-shake.file-shake@0.3.0` |
+| Isolated CLI install | `Extension 'changescope-0.3.0.vsix' was successfully installed.`; `--list-extensions --show-versions` prints `changescope.changescope@0.3.0` |
 | "undo is classified as you" with the test VS Code brought to the front | **passes** (alone, and in the full runs held in front); fails without focus (R3.8) |
 | Mutation sanity of the new code | 36 mutants of the round 3 code: **32 killed, 4 equivalent** (explained); 2 survivors showed real test gaps and got new tests (R3.4) |
 | Not verified | Git lists in a real host, the dashboard in a real webview, Windows, Linux, GitHub Actions, VS Code 1.85, real restart persistence (R3.9) |
@@ -513,7 +513,7 @@ Every `[QA-nnn]` integration test that was red in round 2 is green now: QA-101 i
 npx tsc -p test/tsconfig.json --noEmit ; npx eslint test         # clean
 npm run lint                                                     # exit 0
 npm run test:unit                                                # x3, before the pathological-test change: tests 2498, pass 2497, fail 1, skipped 0, todo 0 (each time)
-node esbuild.mjs --production ; npm run package                  # file-shake-0.3.0.vsix, 13 files, 114.68 KB
+node esbuild.mjs --production ; npm run package                  # changescope-0.3.0.vsix, 13 files, 114.68 KB
 npm run test:unit                                                # x3, vsix present: tests 2501, pass 2501, fail 0, skipped 0, todo 0 (each time)
 FS_VSCODE_EXE="/Applications/Visual Studio Code.app/Contents/MacOS/Electron" caffeinate -i npm run test:integration   # twice (below)
 node --import tsx test/perf/bench030.ts                          # three passes -> docs/BENCHMARKS.md
@@ -565,7 +565,7 @@ The two pending tests are the QA-002 reproducer (skips itself on VS Code 1.129.1
 Several 0.2.0 wall-clock tests failed in round 3 and passed again when the machine recovered. They passed in every earlier run (for example "overhead 0.057 to 0.153 ms per edit; 400 KB file 4.0 to 8.2 ms per edit").
 The evidence that the machine, not the product, was slow:
 
-* The cost of a plain edit with File Shake **disabled** (a baseline the extension does not influence) rose from 0.46 to 0.66 ms to **6.9 to 11.9 ms per edit** (`PERF disabled` lines: run 1 9.698 ms, run 2 7.822 ms, a run alone 6.861 ms, the installed run 11.879 ms), 10 to 20 times slower.
+* The cost of a plain edit with Changescope **disabled** (a baseline the extension does not influence) rose from 0.46 to 0.66 ms to **6.9 to 11.9 ms per edit** (`PERF disabled` lines: run 1 9.698 ms, run 2 7.822 ms, a run alone 6.861 ms, the installed run 11.879 ms), 10 to 20 times slower.
 * `pmset -g batt` showed the laptop **on battery at 1 percent, final warning**; `vm.swapusage` showed 22.4 of 23.5 GB in use with 81 MB free; the load average reached **442**; the installed-`.vsix` single run took **42 minutes** instead of 2.
 * After the charger was connected and the load fell, the same tests passed: a re-run alone of `10-editing` "idle", `Adversarial probes` "autosave: the save and its watcher echo are not activity" and the three `80-performance` tests gave **5 passing** (`PERF disabled 1.221 ms/edit, overhead 0.150 ms/edit; 400 KB file 7.16 ms/edit`), and the final full runs passed completely (`PERF disabled 0.966 ms/edit, overhead 0.215 ms/edit, 400 KB 10.52 ms/edit` standard; `0.626 / 0.169 / 8.51` installed).
 
@@ -579,7 +579,7 @@ The test (`10-editing.single`, 0.2.0) failed in run 1 ("no undo-redo event after
 
 ## R3.9 Not run or not verified (stated plainly)
 
-* **Git lists in a real host with focus**: not verified. The Git-lists test (`83-intelligence.single`) skipped itself again in the standard launch (`vscode.git` is not loaded because of `--disable-extensions`) and in the installed-`.vsix` launch, with the printed reason `the repository did not appear (File Shake reports: unavailable, "The Git extension is disabled or its API is not available.")`. That leaves branch and commit display, the staged / changes / untracked lists, the 200 cap and the "Git" relabelling of a branch switch covered by `gitModel.test.ts` and `dashboardModel.test.ts` only. This is the largest remaining hole in what has been verified in a host.
+* **Git lists in a real host with focus**: not verified. The Git-lists test (`83-intelligence.single`) skipped itself again in the standard launch (`vscode.git` is not loaded because of `--disable-extensions`) and in the installed-`.vsix` launch, with the printed reason `the repository did not appear (Changescope reports: unavailable, "The Git extension is disabled or its API is not available.")`. That leaves branch and commit display, the staged / changes / untracked lists, the 200 cap and the "Git" relabelling of a branch switch covered by `gitModel.test.ts` and `dashboardModel.test.ts` only. This is the largest remaining hole in what has been verified in a host.
 * **The rendered dashboard in a real webview**: jsdom and the real `dist/dashboard.js` in jsdom only; the `ready` and state flow were observed in VS Code through counters. Nobody looked at the page, themes, high contrast or the real CSP.
 * **Windows and Linux**: not run (macOS only). `toSafeDisplayPath` is covered with Windows-style keys at unit level only.
 * **GitHub Actions** (`.github/workflows/ci.yml`, `release.yml`): never ran.

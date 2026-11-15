@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { envPath, getApi, keyOf, must, openDoc, resetConfig, resetState, rowOf, settleRefs, testing, trackedOf, typeAndWait, waitUntil } from './helpers';
 
 suite('Workspace folders added and removed at runtime (multi-root)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
 
   suiteSetup(async function () {
     this.timeout(90_000);

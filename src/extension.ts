@@ -32,7 +32,7 @@ export interface AgentActivityReport {
   sessionId?: string;
 }
 
-export interface FileShakeApi {
+export interface ChangescopeApi {
   readonly apiVersion: 1;
   getRows(): readonly ViewRow[];
   getTracked(): readonly TrackedFile[];
@@ -47,17 +47,17 @@ export interface FileShakeApi {
   whenReferencesIdle(): Promise<void>;
   // ---- 0.3.0 (additive; apiVersion stays 1) ----
   /**
-   * Registers a summary provider. It is only used when the user sets `fileShake.ai.mode` to `assisted`, picks
-   * it in `fileShake.ai.provider` and agrees in the consent dialog; it then receives metadata only, never file
+   * Registers a summary provider. It is only used when the user sets `changescope.ai.mode` to `assisted`, picks
+   * it in `changescope.ai.provider` and agrees in the consent dialog; it then receives metadata only, never file
    * contents. `getKey()` returns the key the user stored for this provider id in VS Code secret storage.
    */
   registerAiProvider(provider: AiProvider): ProviderHandle;
-  /** Tells File Shake that an agent wrote these files, so recent changes to them are labelled "AI agent". */
+  /** Tells Changescope that an agent wrote these files, so recent changes to them are labelled "AI agent". */
   reportAgentActivity(report: AgentActivityReport): void;
   getActivityEvents(): readonly ActivityEvent[];
   getSessions(): readonly DevelopmentSession[];
   getDashboardState(): DashboardState;
-  /** only defined when FILE_SHAKE_TEST=1: advance = clock + scheduler (ticks, debounces), then a refresh */
+  /** only defined when CHANGESCOPE_TEST=1: advance = clock + scheduler (ticks, debounces), then a refresh */
   readonly testing?: {
     advance(ms: number): void;
     overrideFocus(v: boolean | undefined): void;
@@ -67,7 +67,7 @@ export interface FileShakeApi {
     pendingTimers(): number;
     /** same as the VS Code window gaining (true) or losing (false) focus; the real window state is ignored in test mode */
     windowFocusChanged(focused: boolean): void;
-    /** same as clicking the row of `key` (a file key) in the File Shake view, just before the file opens */
+    /** same as clicking the row of `key` (a file key) in the Changescope view, just before the file opens */
     noteOpenedFromView(key: string): void;
     // ---- 0.3.0 ----
     /** builds the whole dependency index and resolves when it is done (the index never starts by itself in test mode) */
@@ -85,13 +85,13 @@ export interface FileShakeApi {
     collisionStats(): { shown: number; last: string | undefined };
     /** replaces the AI consent dialog; `undefined` restores the real one */
     overrideConsentPrompt(fn: ConsentPrompt | undefined): void;
-    /** replaces the "are you sure" dialog of `fileShake.clearHistory`; `undefined` restores the real one */
+    /** replaces the "are you sure" dialog of `changescope.clearHistory`; `undefined` restores the real one */
     overrideConfirm(fn: ((message: string, action: string) => Thenable<boolean>) | undefined): void;
     /** absolute path of the agent signal file, or undefined without workspace storage */
     agentSignalPath(): string | undefined;
     /** how many times the history was written to the Memento */
     historyWrites(): number;
-    /** the raw value under `fileShake.history` in workspace storage (undefined when nothing is stored) */
+    /** the raw value under `changescope.history` in workspace storage (undefined when nothing is stored) */
     storedHistory(): unknown;
     /** writes pending history, then replaces events and sessions with what is stored: what a restart does (a running session comes back completed) */
     reloadHistory(): Promise<void>;
@@ -123,9 +123,9 @@ function reportedFiles(files: unknown): FileKey[] {
   return out;
 }
 
-export function activate(context: vscode.ExtensionContext): FileShakeApi {
+export function activate(context: vscode.ExtensionContext): ChangescopeApi {
   const subs = context.subscriptions;
-  const testMode = process.env['FILE_SHAKE_TEST'] === '1';
+  const testMode = process.env['CHANGESCOPE_TEST'] === '1';
 
   let clock: Clock = systemClock;
   let scheduler: Scheduler = systemScheduler;
@@ -142,7 +142,7 @@ export function activate(context: vscode.ExtensionContext): FileShakeApi {
   let config = readConfig();
   const getConfig = (): typeof config => config;
 
-  const output = vscode.window.createOutputChannel('File Shake');
+  const output = vscode.window.createOutputChannel('Changescope');
   subs.push(output);
   const log = (msg: string): void => output.appendLine(`[${new Date().toISOString()}] ${msg}`);
 
@@ -284,10 +284,10 @@ export function activate(context: vscode.ExtensionContext): FileShakeApi {
     ),
     // test mode runs on a fake clock and a pretend window focus; the real window state would make runs depend on the desktop
     ...(testMode ? [] : [vscode.window.onDidChangeWindowState((state) => controller.onWindowFocusChanged(state.focused))]),
-    vscode.commands.registerCommand('fileShake.toggle', () => toggleEnabled()),
-    vscode.commands.registerCommand('fileShake.clear', () => controller.clear()),
-    vscode.commands.registerCommand('fileShake.focusView', () => vscode.commands.executeCommand('fileShake.view.focus')),
-    vscode.commands.registerCommand('fileShake.showDebugInfo', () => {
+    vscode.commands.registerCommand('changescope.toggle', () => toggleEnabled()),
+    vscode.commands.registerCommand('changescope.clear', () => controller.clear()),
+    vscode.commands.registerCommand('changescope.focusView', () => vscode.commands.executeCommand('changescope.view.focus')),
+    vscode.commands.registerCommand('changescope.showDebugInfo', () => {
       output.clear();
       output.appendLine(
         JSON.stringify(
@@ -327,7 +327,7 @@ export function activate(context: vscode.ExtensionContext): FileShakeApi {
   void git.start();
   void signal.applyConfig();
 
-  const api: FileShakeApi = {
+  const api: ChangescopeApi = {
     apiVersion: 1,
     getRows: () => controller.peekRows(),
     getTracked: () => controller.tracker.snapshot(),
@@ -377,7 +377,7 @@ export function activate(context: vscode.ExtensionContext): FileShakeApi {
             },
             agentSignalPath: () => signal.filePath(),
             historyWrites: () => activity.storage.writes,
-            storedHistory: (): unknown => context.workspaceState.get<unknown>('fileShake.history'),
+            storedHistory: (): unknown => context.workspaceState.get<unknown>('changescope.history'),
             reloadHistory: async (): Promise<void> => {
               await activity.flush();
               activity.load();

@@ -2,12 +2,12 @@ import * as vscode from 'vscode';
 import { ProviderRegistry, canSend, consentMessage } from '../core/ai/provider';
 import type { AiProvider, AiRequest, Consent, SummaryInput } from '../core/ai/provider';
 import { localSummary } from '../core/ai/localSummary';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import type { Clock, DashSummary, Scheduler } from '../core/types';
 import type { MementoLike } from './storage';
 
-const CONSENT_KEY = 'fileShake.ai.consent';
-const KEY_PREFIX = 'fileShake.ai.key.';
+const CONSENT_KEY = 'changescope.ai.consent';
+const KEY_PREFIX = 'changescope.ai.key.';
 /** A provider that does not answer in this time is abandoned and the local summary is used. */
 export const PROVIDER_TIMEOUT_MS = 30_000;
 const MAX_SUMMARY_CHARS = 4000;
@@ -21,7 +21,7 @@ export type ConsentPrompt = (message: string, detail: string) => Thenable<string
 export interface AiServiceDeps {
   clock: Clock;
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   secrets: vscode.SecretStorage;
   memento: MementoLike;
   log(msg: string): void;
@@ -29,12 +29,12 @@ export interface AiServiceDeps {
 
 export interface ProviderHandle {
   dispose(): void;
-  /** the key the user stored for this provider with "File Shake: Set AI Provider Key"; the only way a provider gets it */
+  /** the key the user stored for this provider with "Changescope: Set AI Provider Key"; the only way a provider gets it */
   getKey(): Promise<string | undefined>;
 }
 
 /**
- * Provider registry, consent and credentials. No network provider ships with File Shake: assisted mode
+ * Provider registry, consent and credentials. No network provider ships with Changescope: assisted mode
  * only does something when another extension registers a provider, and then only after the user agreed.
  * Keys and request payloads are never logged.
  */
@@ -68,7 +68,7 @@ export class AiService implements vscode.Disposable {
     return this.registry.list();
   }
 
-  /** The provider chosen by `fileShake.ai.provider`, when assisted mode is on and it is registered. */
+  /** The provider chosen by `changescope.ai.provider`, when assisted mode is on and it is registered. */
   activeProvider(): AiProvider | undefined {
     const cfg = this.deps.getConfig();
     return cfg.aiMode === 'assisted' && cfg.aiProvider !== '' ? this.registry.get(cfg.aiProvider) : undefined;

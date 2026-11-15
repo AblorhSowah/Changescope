@@ -9,17 +9,17 @@ export interface StatusInput {
 
 export function buildStatus(i: StatusInput): { text: string; tooltip: string } {
   if (!i.enabled) {
-    return { text: '$(circle-slash) File Shake: off', tooltip: 'File Shake is off' };
+    return { text: '$(circle-slash) Changescope: off', tooltip: 'Changescope is off' };
   }
   const edited = i.rows.filter((r) => r.role === 'edited');
   const referenced = i.rows.filter((r) => r.role === 'referenced');
   const tooltip = [
-    `File Shake — ${edited.length} edited, ${referenced.length} referenced`,
+    `Changescope — ${edited.length} edited, ${referenced.length} referenced`,
     ...edited.map((r) => `${r.name} — ${r.badge}`),
   ].join('\n');
 
   const primary = edited.find((r) => r.phase === 'active') ?? (i.showWhenIdle === true ? edited[0] : undefined);
-  if (!primary) return { text: '$(pulse) File Shake', tooltip };
+  if (!primary) return { text: '$(pulse) Changescope', tooltip };
 
   const label = primary.source === 'external' ? 'external' : 'typing';
   let text = `$(pulse) ${primary.name} · ${label}`;

@@ -1,4 +1,4 @@
-// Package audit of the built file-shake-0.3.0.vsix (produced by `npm run package`; run it first, ideally from a clean dist/).
+// Package audit of the built changescope-0.3.0.vsix (produced by `npm run package`; run it first, ideally from a clean dist/).
 // The .vsix is unzipped with the system `unzip`; nothing is installed or executed except a stub-`vscode` load of the bundle.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,9 +10,9 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import { REPO_ROOT, readRepoFile } from '../support/fixtures';
 
-const vsixPath = join(REPO_ROOT, 'file-shake-0.3.0.vsix');
+const vsixPath = join(REPO_ROOT, 'changescope-0.3.0.vsix');
 const have = existsSync(vsixPath);
-const SKIP = 'file-shake-0.3.0.vsix is missing: run `npm run package` first';
+const SKIP = 'changescope-0.3.0.vsix is missing: run `npm run package` first';
 
 function unzipList(): string[] {
   const r = spawnSync('unzip', ['-Z1', vsixPath], { encoding: 'utf8' });
@@ -91,14 +91,14 @@ describe('.vsix package audit', () => {
   it('vsixmanifest: identity, engine, extension kind, banner, license and icon', (t) => {
     if (!have) return t.skip(SKIP);
     const m = unzipFile('extension.vsixmanifest').toString('utf8');
-    assert.match(m, /<Identity Language="en-US" Id="file-shake" Version="0\.3\.0" Publisher="file-shake" \/>/);
+    assert.match(m, /<Identity Language="en-US" Id="changescope" Version="0\.3\.0" Publisher="changescope" \/>/);
     assert.match(m, /Microsoft\.VisualStudio\.Code\.Engine" Value="\^1\.85\.0"/);
     assert.match(m, /Microsoft\.VisualStudio\.Code\.ExtensionKind" Value="workspace"/);
     assert.match(m, /Branding\.Color" Value="#0d1117"/);
     assert.match(m, /Branding\.Theme" Value="dark"/);
     assert.match(m, /<License>extension\/LICENSE\.txt<\/License>/);
     assert.match(m, /<Icon>extension\/media\/icon\.png<\/Icon>/);
-    assert.match(m, /<DisplayName>File Shake<\/DisplayName>/);
+    assert.match(m, /<DisplayName>Changescope<\/DisplayName>/);
   });
 
   it('the packaged icon is a 128x128 RGBA PNG (header check)', (t) => {
@@ -112,7 +112,7 @@ describe('.vsix package audit', () => {
 
   it('LICENSE.txt is the MIT text; changelog and readme are present and non-trivial', (t) => {
     if (!have) return t.skip(SKIP);
-    assert.match(unzipFile('extension/LICENSE.txt').toString('utf8'), /MIT License[\s\S]*Copyright \(c\) 2026 File Shake contributors/);
+    assert.match(unzipFile('extension/LICENSE.txt').toString('utf8'), /MIT License[\s\S]*Copyright \(c\) 2026 Changescope contributors/);
     assert.ok(unzipFile('extension/readme.md').length > 3000);
     assert.match(unzipFile('extension/changelog.md').toString('utf8'), /^## 0\.3\.0$/m);
   });

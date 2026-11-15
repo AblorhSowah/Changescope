@@ -27,7 +27,7 @@ function block(selectorStart: string, from = 0): string {
 
 describe('media/dashboard.css: sources (DESIGN-0.3.0 11.2 table)', () => {
   const chain: Array<[string, string, string]> = [
-    ['developer', '--vscode-fileShake-editedForeground', '#3fb950'],
+    ['developer', '--vscode-changescope-editedForeground', '#3fb950'],
     ['ai-agent', '--vscode-charts-blue', '#3794ff'],
     ['external', '--vscode-charts-yellow', '#cca700'],
     ['git', '--vscode-charts-purple', '#b180d7'],

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import {
   createSettled,
   decorationOf,
@@ -30,7 +30,7 @@ import {
 } from './helpers';
 
 suite('Adversarial probes (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
   const touchedSettings: Array<[string, unknown]> = [];
@@ -165,7 +165,7 @@ suite('Adversarial probes (single-root workspace)', () => {
     assert.equal(must(trackedOf(api, keyOf(a))).phase, 'idle');
     assert.equal(testing(api).pendingTimers(), 0, 'precondition: with showWhenIdle on and nothing active no timer runs');
     await setConfig('showWhenIdle', false);
-    await waitUntil(api, () => vscode.workspace.getConfiguration('fileShake').get('showWhenIdle') === false, 'the setting to change');
+    await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('showWhenIdle') === false, 'the setting to change');
     testing(api).advance(0);
     assert.ok(trackedOf(api, keyOf(a)), 'still inside the retain window, so the row is (correctly) still listed');
     assert.ok(testing(api).pendingTimers() >= 1, 'a removal tick must be pending: without one the idle row stays on screen until something else happens');

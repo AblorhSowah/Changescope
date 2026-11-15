@@ -3,7 +3,7 @@ import type { RawEvent } from '../core/activity/attribution';
 import { ActivityTracker } from '../core/activityTracker';
 import { BurstGuard } from '../core/burstGuard';
 import { toTrackerOptions } from '../core/config';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { K } from '../core/constants';
 import { buildDecorations } from '../core/decorations';
 import { EventLog } from '../core/eventLog';
@@ -47,7 +47,7 @@ export interface ActivityHooks {
 export interface ControllerDeps {
   clock: Clock;
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   decorations: DecorationSink;
   view: ViewSink;
@@ -61,7 +61,7 @@ export interface ControllerDeps {
 export interface DebugInfo {
   extensionVersion: string;
   vscodeVersion: string;
-  config: FileShakeConfig;
+  config: ChangescopeConfig;
   roots: WorkspaceRoot[];
   enabled: boolean;
   viewVisible: boolean;
@@ -311,15 +311,15 @@ export class ShakeController implements vscode.Disposable {
   // ----------------------------------------------------------------------------
 
   /** Idle files stay listed: either asked for explicitly, or because each user's files persist until they move on. */
-  private keepsIdle(cfg: FileShakeConfig): boolean {
+  private keepsIdle(cfg: ChangescopeConfig): boolean {
     return cfg.showWhenIdle || cfg.persistUntilNextFile;
   }
 
-  private analysisSettings(cfg: FileShakeConfig): string {
+  private analysisSettings(cfg: ChangescopeConfig): string {
     return `${cfg.maxFileSizeKb}|${JSON.stringify(cfg.excludeGlobs)}|${JSON.stringify(cfg.sensitiveGlobs)}`;
   }
 
-  private computeRows(cfg: FileShakeConfig, tracked: readonly TrackedFile[]): ViewRow[] {
+  private computeRows(cfg: ChangescopeConfig, tracked: readonly TrackedFile[]): ViewRow[] {
     return buildRows({
       tracked,
       references: this.references.results(),
@@ -331,7 +331,7 @@ export class ShakeController implements vscode.Disposable {
     });
   }
 
-  private buildSnapshot(cfg: FileShakeConfig, rows: readonly ViewRow[]): Snapshot {
+  private buildSnapshot(cfg: ChangescopeConfig, rows: readonly ViewRow[]): Snapshot {
     return {
       v: 1,
       seq: this.seq,

@@ -18,7 +18,7 @@ export type { AppEnv, CodeViewId, DashApp, DashHostApi, DashPersisted, FilterId,
 /** Minimum time between two announcements in the live region. */
 export const ANNOUNCE_MS = 1500;
 
-export const DISABLED_TEXT = 'File Shake is turned off, so new changes are not recorded. Run "File Shake: Toggle On/Off" to turn it back on.';
+export const DISABLED_TEXT = 'Changescope is turned off, so new changes are not recorded. Run "Changescope: Toggle On/Off" to turn it back on.';
 export const PAUSED_TEXT = 'Tracking is paused. New changes are not recorded.';
 export const LOADING_TEXT = 'Loading activity.';
 
@@ -50,7 +50,7 @@ function isDisabled(el: Element): boolean {
 /** Status changes worth saying aloud. Progress counts are left out on purpose: they would never stop talking. */
 function statusChanges(prev: DashboardState, next: DashboardState): string[] {
   const out: string[] = [];
-  if (prev.enabled !== next.enabled) out.push(next.enabled ? 'File Shake is on.' : 'File Shake is off.');
+  if (prev.enabled !== next.enabled) out.push(next.enabled ? 'Changescope is on.' : 'Changescope is off.');
   if (prev.settings.paused !== next.settings.paused) out.push(next.settings.paused ? 'Tracking paused.' : 'Tracking resumed.');
   if (prev.settings.mode !== next.settings.mode) out.push(`${MODE_LABEL[next.settings.mode]} mode.`);
   if (prev.git.state !== next.git.state && next.git.state === 'unavailable') out.push('Git is unavailable.');
@@ -77,7 +77,7 @@ export function mountDashboard(root: HTMLElement, host: DashHostApi, envOverride
 
   // ----- skeleton --------------------------------------------------------------
 
-  const nav = h(doc, 'nav', 'fd-tabs', { role: 'tablist', 'aria-label': 'File Shake dashboard' });
+  const nav = h(doc, 'nav', 'fd-tabs', { role: 'tablist', 'aria-label': 'Changescope dashboard' });
   const tabEls = new Map<TabId, HTMLButtonElement>();
   const panelEls = new Map<TabId, HTMLElement>();
   for (const t of TABS) {
@@ -220,7 +220,7 @@ export function mountDashboard(root: HTMLElement, host: DashHostApi, envOverride
       now: state.now,
       mode,
       motion,
-      // a turned-off File Shake records nothing, so a leftover active row must not keep moving
+      // a turned-off Changescope records nothing, so a leftover active row must not keep moving
       shake: motion && mode === 'live' && state.enabled,
       reducedMotion: reduced,
       ui,

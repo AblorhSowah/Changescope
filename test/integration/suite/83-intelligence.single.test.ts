@@ -4,14 +4,14 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { createSettled, externalWrite, getApi, keyOf, must, openDoc, removePath, resetConfig, runNode, rowOf, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir, writeFile } from './helpers';
 import { dashboardState, eventsFor, externalChange, lastEventFor, resetAll, resetHistory, run, send } from './helpers030';
 
 let touches = 0;
 
 suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -265,7 +265,7 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
       assert.equal(testing(api).collisionStats().shown, shownBefore);
     });
 
-    test('choosing "Compare with Saved" shows the comparison; nothing is saved or reloaded by File Shake', async function () {
+    test('choosing "Compare with Saved" shows the comparison; nothing is saved or reloaded by Changescope', async function () {
       this.timeout(120_000);
       const made = await createSettled(api, scratch('collide-compare'), { 'c.ts': 'export const c = 1;\n' });
       const file = must(made['c.ts']);
@@ -309,7 +309,7 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
       await settleRefs(api);
       await waitUntil(api, () => rowOf(api, util)?.role === 'referenced', 'the ordinary file to make util.ts yellow', 60_000);
       assert.equal(must(rowOf(api, util)).role, 'referenced');
-      await vscode.commands.executeCommand('fileShake.clear');
+      await vscode.commands.executeCommand('changescope.clear');
       testing(api).advance(60_000);
       assert.equal(rowOf(api, util), undefined, 'precondition: the rows are gone');
 
@@ -370,7 +370,7 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
   suite('Git', () => {
     const gitConfig = (): vscode.WorkspaceConfiguration => vscode.workspace.getConfiguration('git');
 
-    test('with the built-in Git extension disabled (the test host sets git.enabled false) File Shake says so and keeps working; sessions have no Git context', async function () {
+    test('with the built-in Git extension disabled (the test host sets git.enabled false) Changescope says so and keeps working; sessions have no Git context', async function () {
       this.timeout(60_000);
       const g = dashboardState(api).git;
       assert.equal(g.state, 'unavailable');
@@ -382,11 +382,11 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
       assert.equal(dashboardState(api).sessions.active?.branch, null);
     });
 
-    test('fileShake.git.enabled = false turns the section off with that reason; turning it on again goes back to looking', async function () {
+    test('changescope.git.enabled = false turns the section off with that reason; turning it on again goes back to looking', async function () {
       this.timeout(60_000);
       await setConfig('git.enabled', false);
       await waitUntil(api, () => dashboardState(api).git.state === 'disabled', 'git to be disabled', 20_000);
-      assert.match(dashboardState(api).git.detail, /fileShake\.git\.enabled/);
+      assert.match(dashboardState(api).git.detail, /changescope\.git\.enabled/);
       assert.equal(dashboardState(api).settings.gitEnabled, false);
       await setConfig('git.enabled', true);
       await waitUntil(api, () => dashboardState(api).git.state !== 'disabled', 'git to be looked for again', 20_000);
@@ -431,14 +431,14 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
             return hasCommand;
           }, 'the Git extension to register its commands', 20_000);
         } catch {
-          console.log(`[83-intelligence] SKIPPED Git lists: the Git extension registered no commands in this launch (File Shake reports: ${dashboardState(api).git.state}, "${dashboardState(api).git.detail}").`);
+          console.log(`[83-intelligence] SKIPPED Git lists: the Git extension registered no commands in this launch (Changescope reports: ${dashboardState(api).git.state}, "${dashboardState(api).git.detail}").`);
           return this.skip();
         }
         await vscode.commands.executeCommand('git.openRepository', dir);
         try {
           await waitUntil(api, () => dashboardState(api).git.repos.some((r) => r.id === keyOf(dir)), 'the repository to appear in the dashboard', 30_000);
         } catch {
-          console.log(`[83-intelligence] SKIPPED Git lists: the repository did not appear (File Shake reports: ${dashboardState(api).git.state}, "${dashboardState(api).git.detail}").`);
+          console.log(`[83-intelligence] SKIPPED Git lists: the repository did not appear (Changescope reports: ${dashboardState(api).git.state}, "${dashboardState(api).git.detail}").`);
           return this.skip();
         }
         const repo = must(dashboardState(api).git.repos.find((r) => r.id === keyOf(dir)));
@@ -495,7 +495,7 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
         assert.match(must(dashboardState(api).git.repos.find((x) => x.id === keyOf(dir))).branch ?? '', /feature/);
       } finally {
         await gitConfig().update('enabled', false, vscode.ConfigurationTarget.Global);
-        await run('fileShake.resume');
+        await run('changescope.resume');
       }
     });
   });

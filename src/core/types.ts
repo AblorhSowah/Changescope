@@ -64,7 +64,7 @@ export interface DecorationSpec {
   role: Role;
   badge: string;
   tooltip: string;
-  colorId: 'fileShake.editedForeground' | 'fileShake.referencedForeground';
+  colorId: 'changescope.editedForeground' | 'changescope.referencedForeground';
   propagate: boolean;
 }
 

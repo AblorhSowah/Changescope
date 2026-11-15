@@ -1,8 +1,8 @@
 {
-  "name": "file-shake",
-  "displayName": "File Shake",
+  "name": "changescope",
+  "displayName": "Changescope",
   "version": "0.3.0",
-  "publisher": "file-shake",
+  "publisher": "changescope",
   "description": "Real-time developer activity intelligence for VS Code. Track file changes, understand external and AI-assisted modifications, explore dependencies and monitor your codebase.",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -60,8 +60,8 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "fileShake",
-          "title": "File Shake",
+          "id": "changescope",
+          "title": "Changescope",
           "icon": "media/activity.svg"
         }
       ]
@@ -70,174 +70,174 @@
       "explorer": [
         {
           "type": "webview",
-          "id": "fileShake.view",
-          "name": "File Shake",
-          "contextualTitle": "File Shake"
+          "id": "changescope.view",
+          "name": "Changescope",
+          "contextualTitle": "Changescope"
         }
       ],
-      "fileShake": [
+      "changescope": [
         {
           "type": "webview",
-          "id": "fileShake.dashboard",
+          "id": "changescope.dashboard",
           "name": "Activity",
-          "contextualTitle": "File Shake"
+          "contextualTitle": "Changescope"
         }
       ]
     },
     "commands": [
       {
-        "command": "fileShake.toggle",
+        "command": "changescope.toggle",
         "title": "Toggle On/Off",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.clear",
+        "command": "changescope.clear",
         "title": "Clear",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.focusView",
+        "command": "changescope.focusView",
         "title": "Focus View",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.showDebugInfo",
+        "command": "changescope.showDebugInfo",
         "title": "Show Debug Info",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.openDashboard",
+        "command": "changescope.openDashboard",
         "title": "Open Dashboard",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.openDashboardPanel",
+        "command": "changescope.openDashboardPanel",
         "title": "Open Dashboard in Editor",
-        "category": "File Shake",
+        "category": "Changescope",
         "icon": "$(link-external)"
       },
       {
-        "command": "fileShake.setViewMode",
+        "command": "changescope.setViewMode",
         "title": "Set View Mode",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.pause",
+        "command": "changescope.pause",
         "title": "Pause Tracking",
-        "category": "File Shake",
+        "category": "Changescope",
         "icon": "$(debug-pause)"
       },
       {
-        "command": "fileShake.resume",
+        "command": "changescope.resume",
         "title": "Resume Tracking",
-        "category": "File Shake",
+        "category": "Changescope",
         "icon": "$(debug-continue)"
       },
       {
-        "command": "fileShake.startSession",
+        "command": "changescope.startSession",
         "title": "Start Session",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.stopSession",
+        "command": "changescope.stopSession",
         "title": "Stop Session",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.renameSession",
+        "command": "changescope.renameSession",
         "title": "Rename Session",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.exportSessionReport",
+        "command": "changescope.exportSessionReport",
         "title": "Export Session Report",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.markAllReviewed",
+        "command": "changescope.markAllReviewed",
         "title": "Mark All Changes as Reviewed",
-        "category": "File Shake",
+        "category": "Changescope",
         "icon": "$(check-all)"
       },
       {
-        "command": "fileShake.clearHistory",
+        "command": "changescope.clearHistory",
         "title": "Clear Activity History",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.rebuildDependencyIndex",
+        "command": "changescope.rebuildDependencyIndex",
         "title": "Rebuild Dependency Index",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.copyAgentHook",
+        "command": "changescope.copyAgentHook",
         "title": "Copy Agent Hook (Experimental)",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.ai.setKey",
+        "command": "changescope.ai.setKey",
         "title": "Set AI Provider Key",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.ai.clearKey",
+        "command": "changescope.ai.clearKey",
         "title": "Clear AI Provider Key",
-        "category": "File Shake"
+        "category": "Changescope"
       },
       {
-        "command": "fileShake.ai.resetConsent",
+        "command": "changescope.ai.resetConsent",
         "title": "Reset AI Consent",
-        "category": "File Shake"
+        "category": "Changescope"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "fileShake.clear",
-          "when": "view == fileShake.view",
+          "command": "changescope.clear",
+          "when": "view == changescope.view",
           "group": "navigation"
         },
         {
-          "command": "fileShake.toggle",
-          "when": "view == fileShake.view",
+          "command": "changescope.toggle",
+          "when": "view == changescope.view",
           "group": "navigation"
         },
         {
-          "command": "fileShake.pause",
-          "when": "view == fileShake.dashboard && !fileShake.paused",
+          "command": "changescope.pause",
+          "when": "view == changescope.dashboard && !changescope.paused",
           "group": "navigation@1"
         },
         {
-          "command": "fileShake.resume",
-          "when": "view == fileShake.dashboard && fileShake.paused",
+          "command": "changescope.resume",
+          "when": "view == changescope.dashboard && changescope.paused",
           "group": "navigation@1"
         },
         {
-          "command": "fileShake.markAllReviewed",
-          "when": "view == fileShake.dashboard",
+          "command": "changescope.markAllReviewed",
+          "when": "view == changescope.dashboard",
           "group": "navigation@2"
         },
         {
-          "command": "fileShake.openDashboardPanel",
-          "when": "view == fileShake.dashboard",
+          "command": "changescope.openDashboardPanel",
+          "when": "view == changescope.dashboard",
           "group": "navigation@3"
         }
       ],
       "commandPalette": [
         {
-          "command": "fileShake.pause",
-          "when": "!fileShake.paused"
+          "command": "changescope.pause",
+          "when": "!changescope.paused"
         },
         {
-          "command": "fileShake.resume",
-          "when": "fileShake.paused"
+          "command": "changescope.resume",
+          "when": "changescope.paused"
         }
       ]
     },
     "colors": [
       {
-        "id": "fileShake.editedForeground",
-        "description": "Colour of the file being edited (Explorer decoration and File Shake view).",
+        "id": "changescope.editedForeground",
+        "description": "Colour of the file being edited (Explorer decoration and Changescope view).",
         "defaults": {
           "dark": "#3fb950",
           "light": "#1a7f37",
@@ -246,8 +246,8 @@
         }
       },
       {
-        "id": "fileShake.referencedForeground",
-        "description": "Colour of files referenced by the file being edited (Explorer decoration and File Shake view).",
+        "id": "changescope.referencedForeground",
+        "description": "Colour of files referenced by the file being edited (Explorer decoration and Changescope view).",
         "defaults": {
           "dark": "#e3b341",
           "light": "#9a6700",
@@ -257,21 +257,21 @@
       }
     ],
     "configuration": {
-      "title": "File Shake",
+      "title": "Changescope",
       "properties": {
-        "fileShake.enable": {
+        "changescope.enable": {
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "markdownDescription": "Enable File Shake. When off, nothing is tracked, decorated or shown."
+          "markdownDescription": "Enable Changescope. When off, nothing is tracked, decorated or shown."
         },
-        "fileShake.enableAnimation": {
+        "changescope.enableAnimation": {
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "markdownDescription": "Shake rows in the File Shake view. Colours, badges and the intensity meter are always shown. Animation is also disabled when your OS requests reduced motion."
+          "markdownDescription": "Shake rows in the Changescope view. Colours, badges and the intensity meter are always shown. Animation is also disabled when your OS requests reduced motion."
         },
-        "fileShake.idleTimeoutMs": {
+        "changescope.idleTimeoutMs": {
           "type": "number",
           "default": 2500,
           "minimum": 500,
@@ -279,7 +279,7 @@
           "scope": "window",
           "markdownDescription": "Milliseconds without edits after which a file is considered idle (shaking stops and the intensity fades to zero)."
         },
-        "fileShake.windowMs": {
+        "changescope.windowMs": {
           "type": "number",
           "default": 3000,
           "minimum": 500,
@@ -287,7 +287,7 @@
           "scope": "window",
           "markdownDescription": "Length in milliseconds of the sliding window used to measure the edit rate."
         },
-        "fileShake.maxFiles": {
+        "changescope.maxFiles": {
           "type": "integer",
           "default": 40,
           "minimum": 5,
@@ -295,7 +295,7 @@
           "scope": "window",
           "markdownDescription": "Maximum number of files shown at once (edited files first, then the most-referenced files)."
         },
-        "fileShake.excludeGlobs": {
+        "changescope.excludeGlobs": {
           "type": "array",
           "items": {
             "type": "string"
@@ -322,21 +322,21 @@
           "scope": "window",
           "markdownDescription": "Glob patterns (relative to the workspace folder) of files that are never tracked and never shown as references."
         },
-        "fileShake.colors.edited": {
+        "changescope.colors.edited": {
           "type": "string",
           "default": "",
           "pattern": "^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8})?$",
           "scope": "window",
-          "markdownDescription": "Colour of edited files in the File Shake view (for example `#3fb950`). Empty follows the theme colour. This setting affects the webview only; Explorer colours come from `workbench.colorCustomizations` keys `fileShake.editedForeground` / `fileShake.referencedForeground`."
+          "markdownDescription": "Colour of edited files in the Changescope view (for example `#3fb950`). Empty follows the theme colour. This setting affects the webview only; Explorer colours come from `workbench.colorCustomizations` keys `changescope.editedForeground` / `changescope.referencedForeground`."
         },
-        "fileShake.colors.referenced": {
+        "changescope.colors.referenced": {
           "type": "string",
           "default": "",
           "pattern": "^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8})?$",
           "scope": "window",
-          "markdownDescription": "Colour of referenced files in the File Shake view (for example `#e3b341`). Empty follows the theme colour. This setting affects the webview only; Explorer colours come from `workbench.colorCustomizations` keys `fileShake.editedForeground` / `fileShake.referencedForeground`."
+          "markdownDescription": "Colour of referenced files in the Changescope view (for example `#e3b341`). Empty follows the theme colour. This setting affects the webview only; Explorer colours come from `workbench.colorCustomizations` keys `changescope.editedForeground` / `changescope.referencedForeground`."
         },
-        "fileShake.sensitivity": {
+        "changescope.sensitivity": {
           "type": "number",
           "default": 1,
           "minimum": 0.25,
@@ -344,31 +344,31 @@
           "scope": "window",
           "markdownDescription": "Multiplier for how strongly rows react to activity. Higher values reach full shake with fewer edits or references."
         },
-        "fileShake.showWhenIdle": {
+        "changescope.showWhenIdle": {
           "type": "boolean",
           "default": false,
           "scope": "window",
           "markdownDescription": "Keep idle files (and the files they reference) listed after activity stops, instead of removing them a few seconds after they go idle."
         },
-        "fileShake.persistUntilNextFile": {
+        "changescope.persistUntilNextFile": {
           "type": "boolean",
           "default": true,
           "scope": "window",
           "markdownDescription": "Keep a file (and the files it references) on screen after it stops shaking, until the same user moves on. Your file stays until you switch to another file or leave the window. A file changed by something else (Claude, git, a tool) stays until that something changes a different file. Files changed at the same time are all shown. Turn this off to remove idle files a few seconds after they stop."
         },
-        "fileShake.decorateFolders": {
+        "changescope.decorateFolders": {
           "type": "boolean",
           "default": true,
           "scope": "window",
           "markdownDescription": "Also tint the parent folders of active files in the native Explorer (a coloured name with a small dot)."
         },
-        "fileShake.detectExternalEdits": {
+        "changescope.detectExternalEdits": {
           "type": "boolean",
           "default": true,
           "scope": "window",
           "markdownDescription": "Track changes that do not come from typing in the focused editor (for example Claude Code, git, formatters, build tools) and label them `external`."
         },
-        "fileShake.maxFileSizeKb": {
+        "changescope.maxFileSizeKb": {
           "type": "integer",
           "default": 512,
           "minimum": 16,
@@ -376,13 +376,13 @@
           "scope": "window",
           "markdownDescription": "Files larger than this many kilobytes are tracked as edited but are not scanned for references."
         },
-        "fileShake.showStatusBar": {
+        "changescope.showStatusBar": {
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "markdownDescription": "Show the File Shake status bar item with the currently tracked file."
+          "markdownDescription": "Show the Changescope status bar item with the currently tracked file."
         },
-        "fileShake.viewMode": {
+        "changescope.viewMode": {
           "type": "string",
           "enum": [
             "live",
@@ -396,23 +396,23 @@
           ],
           "default": "live",
           "scope": "window",
-          "markdownDescription": "Visual mode of the File Shake dashboard. `live` shakes rows with activity, `compact` shows calm single-line rows and also stops the shaking in the Explorer view, `impact` adds an impact estimate (from import edges) to each row."
+          "markdownDescription": "Visual mode of the Changescope dashboard. `live` shakes rows with activity, `compact` shows calm single-line rows and also stops the shaking in the Explorer view, `impact` adds an impact estimate (from import edges) to each row."
         },
-        "fileShake.animationIntensity": {
+        "changescope.animationIntensity": {
           "type": "number",
           "default": 1,
           "minimum": 0.25,
           "maximum": 2,
           "scope": "window",
-          "markdownDescription": "Multiplies how far and how much rows shake, in the dashboard and in the File Shake Explorer view. 1 is the default; lower is calmer. Reduced motion and `fileShake.enableAnimation` still turn shaking off completely."
+          "markdownDescription": "Multiplies how far and how much rows shake, in the dashboard and in the Changescope Explorer view. 1 is the default; lower is calmer. Reduced motion and `changescope.enableAnimation` still turn shaking off completely."
         },
-        "fileShake.history.persist": {
+        "changescope.history.persist": {
           "type": "boolean",
           "default": true,
           "scope": "window",
           "markdownDescription": "Keep the activity history and sessions across restarts, in this workspace's storage managed by VS Code. Turn off to keep them in memory only (the stored copy is deleted)."
         },
-        "fileShake.history.maxEvents": {
+        "changescope.history.maxEvents": {
           "type": "integer",
           "default": 1000,
           "minimum": 100,
@@ -420,7 +420,7 @@
           "scope": "window",
           "markdownDescription": "Maximum number of activity events kept. Rapid successive changes of one file by one source count as one event."
         },
-        "fileShake.history.retentionDays": {
+        "changescope.history.retentionDays": {
           "type": "integer",
           "default": 14,
           "minimum": 1,
@@ -428,13 +428,13 @@
           "scope": "window",
           "markdownDescription": "Activity events older than this many days are dropped."
         },
-        "fileShake.git.enabled": {
+        "changescope.git.enabled": {
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "markdownDescription": "Show Git changes in the dashboard and use repository state changes (checkout, pull, commit) to label nearby file changes as `git`. Uses the built-in Git extension; nothing is run by File Shake itself."
+          "markdownDescription": "Show Git changes in the dashboard and use repository state changes (checkout, pull, commit) to label nearby file changes as `git`. Uses the built-in Git extension; nothing is run by Changescope itself."
         },
-        "fileShake.dependencies.index": {
+        "changescope.dependencies.index": {
           "type": "string",
           "enum": [
             "onDemand",
@@ -448,7 +448,7 @@
           "scope": "window",
           "markdownDescription": "Workspace dependency index (who imports whom, used for dependencies and the impact estimate). `onDemand` builds it in the background the first time you inspect a file or use Impact mode; `off` never builds it. The index lives in memory only."
         },
-        "fileShake.dependencies.maxFiles": {
+        "changescope.dependencies.maxFiles": {
           "type": "integer",
           "default": 5000,
           "minimum": 200,
@@ -456,13 +456,13 @@
           "scope": "window",
           "markdownDescription": "Maximum number of files the dependency index covers. Larger workspaces are indexed up to this limit and the dashboard says so."
         },
-        "fileShake.collisions.notify": {
+        "changescope.collisions.notify": {
           "type": "boolean",
           "default": true,
           "scope": "window",
-          "markdownDescription": "Show a warning when a file changes on disk while you have unsaved edits in it. File Shake never changes or reloads your document; VS Code keeps your unsaved text."
+          "markdownDescription": "Show a warning when a file changes on disk while you have unsaved edits in it. Changescope never changes or reloads your document; VS Code keeps your unsaved text."
         },
-        "fileShake.sensitiveGlobs": {
+        "changescope.sensitiveGlobs": {
           "type": "array",
           "default": [
             "**/.env*",
@@ -482,7 +482,7 @@
           "scope": "window",
           "markdownDescription": "Glob patterns (relative to the workspace folder) of files that are never read for dependency analysis and never included in any AI request. Their activity is still listed by name."
         },
-        "fileShake.ai.mode": {
+        "changescope.ai.mode": {
           "type": "string",
           "enum": [
             "local",
@@ -494,20 +494,20 @@
           ],
           "default": "local",
           "scope": "window",
-          "markdownDescription": "`local` builds summaries on this machine from file names, counts and labels; nothing is sent anywhere. `assisted` uses a provider registered by another extension (chosen in `fileShake.ai.provider`), only after you agree in a dialog, and sends metadata only, never file contents. File Shake ships no provider."
+          "markdownDescription": "`local` builds summaries on this machine from file names, counts and labels; nothing is sent anywhere. `assisted` uses a provider registered by another extension (chosen in `changescope.ai.provider`), only after you agree in a dialog, and sends metadata only, never file contents. Changescope ships no provider."
         },
-        "fileShake.ai.provider": {
+        "changescope.ai.provider": {
           "type": "string",
           "default": "",
           "pattern": "^([A-Za-z0-9][A-Za-z0-9._-]{0,63})?$",
           "scope": "window",
           "markdownDescription": "Id of the registered AI provider to use in `assisted` mode. Empty means none."
         },
-        "fileShake.experimental.agentSignals": {
+        "changescope.experimental.agentSignals": {
           "type": "boolean",
           "default": false,
           "scope": "window",
-          "markdownDescription": "Experimental. Read a signal file that a hook you configure yourself appends to, so files written by that agent are labelled `AI agent`. Off by default. Use \"File Shake: Copy Agent Hook (Experimental)\" to get the hook snippet. File Shake only reads the file."
+          "markdownDescription": "Experimental. Read a signal file that a hook you configure yourself appends to, so files written by that agent are labelled `AI agent`. Off by default. Use \"Changescope: Copy Agent Hook (Experimental)\" to get the hook snippet. Changescope only reads the file."
         }
       }
     }

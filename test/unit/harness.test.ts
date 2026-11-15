@@ -30,11 +30,11 @@ describe('integration harness: environment scrubbing (DESIGN 13 trap)', () => {
       FS_VSCODE_EXE: '/Applications/Visual Studio Code.app/Contents/MacOS/Electron',
       NOT_VSCODE_X: 'keep',
       vscode_lower: 'keep (case sensitive prefix)',
-      FILE_SHAKE_TEST: '1',
+      CHANGESCOPE_TEST: '1',
     };
     const removed = scrubEnv(env);
     assert.deepEqual(removed, ['ELECTRON_RUN_AS_NODE', 'VSCODE_IPC_HOOK', 'VSCODE_NLS_CONFIG', 'VSCODE_PID', 'VSCODE_TEST_VERSION']);
-    assert.deepEqual(Object.keys(env).sort(), ['FILE_SHAKE_TEST', 'FS_VSCODE_EXE', 'HOME', 'NOT_VSCODE_X', 'PATH', 'vscode_lower']);
+    assert.deepEqual(Object.keys(env).sort(), ['CHANGESCOPE_TEST', 'FS_VSCODE_EXE', 'HOME', 'NOT_VSCODE_X', 'PATH', 'vscode_lower']);
   });
 
   it('is a no-op on a clean environment', () => {
@@ -85,12 +85,12 @@ describe('integration harness: runTest.ts source-level guards', () => {
     assert.match(src, /extensionTestsEnv:\s*layout\.env/);
   });
 
-  it('the layout env carries FILE_SHAKE_TEST=1 for every variant', () => {
+  it('the layout env carries CHANGESCOPE_TEST=1 for every variant', () => {
     const root = join(REPO_ROOT, 'test', 'fixtures');
     for (const v of VARIANTS) {
       const layout = prepareLayout(v, root);
       try {
-        assert.equal(layout.env['FILE_SHAKE_TEST'], v === 'real' ? '0' : '1', 'only the real-time variant runs without the test seam');
+        assert.equal(layout.env['CHANGESCOPE_TEST'], v === 'real' ? '0' : '1', 'only the real-time variant runs without the test seam');
         assert.equal(layout.env['FS_TEST_VARIANT'], v);
       } finally {
         rmSync(layout.root, { recursive: true, force: true });

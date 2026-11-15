@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { RawEvent } from '../core/activity/attribution';
 import { K } from '../core/constants';
 import type { BurstGuard } from '../core/burstGuard';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import type { EventLog } from '../core/eventLog';
 import { createExcludeMatcher, relativeForMatch } from '../core/glob';
 import { typingWeight } from '../core/intensity';
@@ -28,7 +28,7 @@ export interface ActivitySink {
 export interface EditWatcherDeps {
   clock: Clock;
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   isWindowFocused(): boolean;
   log: EventLog;
@@ -357,7 +357,7 @@ export class EditWatcher implements vscode.Disposable {
   private accept(
     key: FileKey,
     cls: Classification,
-    cfg: FileShakeConfig,
+    cfg: ChangescopeConfig,
     origin: LogEntry['origin'],
     at: number,
     eventType: ActivityEventType,

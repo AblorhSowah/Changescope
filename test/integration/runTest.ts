@@ -10,7 +10,7 @@ import type { Variant } from './harness';
 /**
  * FS_INSTALLED_VSIX=<file.vsix>: run the suite against the INSTALLED extension instead of the repo build. The .vsix is
  * installed with the VS Code CLI into the launch's isolated --extensions-dir, and a stub "extension under development" is
- * used only to host the test runner (the real File Shake is then loaded from the extensions dir, like for a user).
+ * used only to host the test runner (the real Changescope is then loaded from the extensions dir, like for a user).
  */
 function installVsix(exe: string, vsix: string, extensionsDir: string, userDataDir: string, root: string): string {
   const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(exe);

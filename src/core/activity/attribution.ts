@@ -1,7 +1,7 @@
 import { isUnder } from '../pathUtils';
 import type { ActivityEventType, ActivitySourceType, ClassifyReason, DetectionMethod, FileKey } from '../types';
 
-/** Who File Shake thinks made a change, how it decided, and how sure it is (DESIGN-0.3.0 section 4.2). */
+/** Who Changescope thinks made a change, how it decided, and how sure it is (DESIGN-0.3.0 section 4.2). */
 export interface Attribution {
   sourceType: ActivitySourceType;
   sourceId?: string;

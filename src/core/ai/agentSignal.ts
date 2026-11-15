@@ -3,11 +3,11 @@ import type { FileKey } from '../types';
 
 /**
  * The experimental agent signal file (DESIGN-0.3.0 section 9): a JSON Lines file that a user-configured
- * hook appends to. File Shake only reads it. One object per line:
+ * hook appends to. Changescope only reads it. One object per line:
  *   {"agent": string, "file": absolute path, "session"?: string}
  */
 
-/** An adapter that can tell File Shake which agent wrote a file. */
+/** An adapter that can tell Changescope which agent wrote a file. */
 export interface AgentAdapter {
   readonly id: string;
   readonly label: string;
@@ -20,7 +20,7 @@ export const SIGNAL_FILE_NAME = 'agent-events.jsonl';
 export const SIGNAL_LIMITS = {
   /** longer lines are skipped */
   LINE: 4096,
-  /** the file is emptied by File Shake once it is larger than this */
+  /** the file is emptied by Changescope once it is larger than this */
   FILE: 1024 * 1024,
   AGENT: 64,
   SESSION: 128,

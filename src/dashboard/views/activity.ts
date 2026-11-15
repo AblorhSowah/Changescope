@@ -27,7 +27,7 @@ export function matchesFilter(row: DashFileRow, filter: FilterId): boolean {
 export const AI_EMPTY_TEXT = 'No agent adapter is reporting. Changes made by agents appear under External.';
 
 function emptyText(filter: FilterId, s: DashboardState): string {
-  const why = !s.enabled ? ' File Shake is turned off.' : s.settings.paused ? ' Tracking is paused.' : '';
+  const why = !s.enabled ? ' Changescope is turned off.' : s.settings.paused ? ' Tracking is paused.' : '';
   switch (filter) {
     case 'live':
       return `Nothing is changing right now.${why}`;

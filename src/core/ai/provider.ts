@@ -4,7 +4,7 @@ import { SOURCE_TYPES } from '../dashboard/protocol';
 import type { ActivityEventType, ActivitySourceType, FileKey } from '../types';
 
 /**
- * Provider-independent AI interface (DESIGN-0.3.0 section 9). File Shake ships no network provider:
+ * Provider-independent AI interface (DESIGN-0.3.0 section 9). Changescope ships no network provider:
  * another extension can register one through the API, and nothing is sent to it without consent.
  */
 
@@ -92,7 +92,7 @@ export function canSend(mode: 'local' | 'assisted', consent: Consent, provider: 
 
 /** Exactly what an assisted request contains, as shown in the consent prompt. */
 export const PAYLOAD_DESCRIPTION: readonly string[] = [
-  'Workspace-relative paths of changed files (files matching fileShake.sensitiveGlobs are left out)',
+  'Workspace-relative paths of changed files (files matching changescope.sensitiveGlobs are left out)',
   'How many times each file changed and whether it was created, modified or deleted',
   'The source label of each change (Developer, External, AI agent, Git, Automated, Unknown)',
   'The current Git branch name and, for a session, its title and duration',
@@ -100,12 +100,12 @@ export const PAYLOAD_DESCRIPTION: readonly string[] = [
 
 export function consentMessage(provider: Pick<AiProvider, 'id' | 'label'>): { message: string; detail: string } {
   return {
-    message: `Allow File Shake to send activity metadata to "${provider.label}" (${provider.id})?`,
+    message: `Allow Changescope to send activity metadata to "${provider.label}" (${provider.id})?`,
     detail:
-      'This provider was registered by another extension. When you ask for a summary, File Shake will send it:\n\n' +
+      'This provider was registered by another extension. When you ask for a summary, Changescope will send it:\n\n' +
       PAYLOAD_DESCRIPTION.map((l) => `- ${l}`).join('\n') +
       '\n\nFile contents are never sent. This choice is stored for this workspace only, and you can undo it with the command ' +
-      '"File Shake: Reset AI Consent".',
+      '"Changescope: Reset AI Consent".',
   };
 }
 
@@ -113,7 +113,7 @@ export interface SummaryInputArgs {
   /** newest first, as `EventStore.files()` returns them */
   files: readonly FileActivity[];
   toDisplay(key: FileKey): string;
-  /** files matching `fileShake.sensitiveGlobs` */
+  /** files matching `changescope.sensitiveGlobs` */
   isSensitive(key: FileKey): boolean;
   session?: { title: string; durationMs: number } | undefined;
   branch?: string | undefined;

@@ -1,4 +1,4 @@
-# File Shake tests
+# Changescope tests
 
 Everything under `test/` is owned by the Tester. Product code (`src/`, `media/`, `package.json`, `esbuild.mjs`) is
 never edited to make a test pass; defects are filed in `docs/QA_REPORT.md`.
@@ -69,7 +69,7 @@ out of `tsc`, `eslint` and the `.vsix`.
 ## Determinism rules
 
 * No real clocks: `ManualClock` / `ManualScheduler` everywhere. In VS Code the extension runs on its own
-  `ManualClock` (`FILE_SHAKE_TEST=1`) and the tests move it with `api.testing.advance(ms)`; `advance(0)` is a pure refresh.
+  `ManualClock` (`CHANGESCOPE_TEST=1`) and the tests move it with `api.testing.advance(ms)`; `advance(0)` is a pure refresh.
 * No sleeps for synchronisation. Real asynchrony (file watcher latency, reference analysis, webview start-up) is awaited by
   re-reading state (`waitUntil` in `suite/helpers.ts`, bounded by a timeout) or by `api.whenReferencesIdle()`.
 * No network. The only download path is `@vscode/test-electron` when `FS_VSCODE_EXE` is not set.
@@ -105,7 +105,7 @@ out of `tsc`, `eslint` and the `.vsix`.
 | `unit/manifest.test.ts` | 13: manifest, pinned toolchain, settings vs `core/config`, README honesty, icon, licence |
 | `unit/harness.test.ts` | the integration harness itself (env scrub, layouts, suite selection) |
 | `webview/render.test.ts`, `motion.test.ts`, `interaction.test.ts`, `security.test.ts`, `lifecycle.test.ts`, `css.test.ts` | 11, 12 (W rows) |
-| `unit/vsix.test.ts` | package audit of `file-shake-0.3.0.vsix` (run `npm run package` first): exact 13-file list, size, no maps, manifest, icon header, `require()` set, stub-`vscode` load of the bundle |
+| `unit/vsix.test.ts` | package audit of `changescope-0.3.0.vsix` (run `npm run package` first): exact 13-file list, size, no maps, manifest, icon header, `require()` set, stub-`vscode` load of the bundle |
 | `unit/analyzeProperties.test.ts` | invariants of `analyzeReferences` over random trees and random import statements in 11 language families |
 | `unit/attribution`, `eventStore`, `collision`, `sessionManager`, `sessionReport`, `storageSchema`, `historyRoundTrip`, `depGraph`, `testMatch`, `impact`, `gitModel`, `aiProvider`, `agentSignal`, `timeFormat`, `dashboardProtocol`, `dashboardModel`, `references030`, `staticChecksDashboard`, `performance030` | 0.3.0 core, written from `docs/DESIGN-0.3.0.md` (sections 4 to 13); `performance030` holds the regression guards, `test/perf/bench030.ts` prints the numbers recorded in `docs/BENCHMARKS.md` |
 | `unit/safeDisplayPath`, `signalChunker`, `testIndex`, `perfGuard` | the bug-fix round (QA-101, QA-110, QA-108): `toSafeDisplayPath` (inside one folder, several folders, nested folders, outside, no folder, Windows keys, 3,000 random keys, and no directory in any session report or AI summary input built from outside files), `SignalChunker` split at every byte and every pair of offsets, `signalTail` and `signalPrefixKept`, `buildTestIndex` and `relatedTestsIn` against an independent reference over 4,000 random lookups and `analyseImpact` with and without the index, and the load-compensation helper |

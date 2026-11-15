@@ -462,7 +462,7 @@ describe('dashboard: filters', () => {
     const d = mount();
     d.send(dashState({ enabled: false }));
     goTo(d, 'activity');
-    assert.match(textOf(d.q('.fd-empty', d.panel('activity'))), /File Shake is turned off/);
+    assert.match(textOf(d.q('.fd-empty', d.panel('activity'))), /Changescope is turned off/);
     d.send(dashState({ seq: 2, settings: { paused: true } }));
     assert.match(textOf(d.q('.fd-empty', d.panel('activity'))), /Tracking is paused/);
     d.send(dashState({ seq: 3 }));
@@ -762,7 +762,7 @@ describe('dashboard: Code tab', () => {
       return textOf(d.q('.fd-notice', d.panel('code')));
     };
     let seq = 0;
-    assert.match(say({ settings: { dependencyIndex: false }, index: { state: 'off' } }), /dependency index is turned off \(fileShake\.dependencies\.index\)/);
+    assert.match(say({ settings: { dependencyIndex: false }, index: { state: 'off' } }), /dependency index is turned off \(changescope\.dependencies\.index\)/);
     assert.match(say({ index: { state: 'idle' } }), /has not been built yet\. It is built the first time you inspect a file\./);
     assert.equal(say({ index: { state: 'indexing', indexed: 340, total: 1200 } }), 'Indexing dependencies: 340 of 1,200 files.');
     assert.equal(say({ index: { state: 'indexing', indexed: 0, total: 0 } }), 'Indexing dependencies.');
@@ -860,7 +860,7 @@ describe('dashboard: Git tab', () => {
       d.send(dashState({ seq, ...o }));
       return textOf(d.panel('git'));
     };
-    assert.match(git({ git: { state: 'disabled', detail: '' }, settings: { gitEnabled: false } }, 1), /Git integration is turned off \(fileShake\.git\.enabled\)\./);
+    assert.match(git({ git: { state: 'disabled', detail: '' }, settings: { gitEnabled: false } }, 1), /Git integration is turned off \(changescope\.git\.enabled\)\./);
     assert.match(git({ git: { state: 'unavailable', detail: 'the built-in Git extension is disabled in this window.' } }, 2), /Git is unavailable: the built-in Git extension is disabled in this window\./);
     assert.match(git({ git: { state: 'unavailable', detail: '' } }, 3), /Git is unavailable\./);
     assert.match(git({ git: { state: 'loading', detail: '' } }, 4), /Loading Git status\./);
@@ -998,12 +998,12 @@ describe('dashboard: limited and empty states say what is true', () => {
     assert.equal(d.root.getAttribute('data-paused'), 'false');
   });
 
-  it('disabled: says File Shake is turned off and how to turn it on; data-enabled=false; no paused notice on top of it', () => {
+  it('disabled: says Changescope is turned off and how to turn it on; data-enabled=false; no paused notice on top of it', () => {
     const d = mount();
     d.send(dashState({ enabled: false, settings: { paused: true }, files: [row('a.ts', 'src')] }));
     assert.equal(d.root.getAttribute('data-enabled'), 'false');
     assert.equal(textOf(d.q('.fd-notice[data-kind="disabled"] .fd-notice-text')), DISABLED_TEXT);
-    assert.match(DISABLED_TEXT, /File Shake: Toggle On\/Off/);
+    assert.match(DISABLED_TEXT, /Changescope: Toggle On\/Off/);
     assert.equal(d.qa('.fd-notice[data-kind="paused"]').length, 0, 'one reason at a time: off beats paused');
     d.send(dashState({ seq: 2, enabled: true }));
     assert.equal(d.qa('.fd-notice[data-kind="disabled"]').length, 0);

@@ -49,9 +49,9 @@ function stored(events: unknown[], sessions: unknown[] = [], schema: unknown = S
 const viaJson = (x: unknown): unknown => JSON.parse(JSON.stringify(x));
 
 describe('storage schema: constants and serialise', () => {
-  it('schema 1 under the key fileShake.history', () => {
+  it('schema 1 under the key changescope.history', () => {
     assert.equal(STORAGE_SCHEMA, 1);
-    assert.equal(STORAGE_KEY, 'fileShake.history');
+    assert.equal(STORAGE_KEY, 'changescope.history');
     assert.deepEqual({ ...STORAGE_LIMITS }, { EVENTS: 5000, SESSIONS: 200, PATH: 4096, ID: 64, TEXT: 200 });
   });
 

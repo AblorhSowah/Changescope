@@ -1,5 +1,7 @@
 # File Shake — Product Brief (source of truth for all agents)
 
+> Historical document (0.1.0). The product was renamed **Changescope** in 0.3.0; this file keeps the original names and ids (`fileShake.*`).
+
 A VS Code extension, installable by anyone, that makes file activity *visible*.
 
 ## What the user asked for (verbatim intent)

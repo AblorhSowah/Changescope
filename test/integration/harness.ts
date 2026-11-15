@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
 /**
- * single/multi/none run with the fake clock + scheduler test seam (FILE_SHAKE_TEST=1). `real` is a single-root launch WITHOUT the
+ * single/multi/none run with the fake clock + scheduler test seam (CHANGESCOPE_TEST=1). `real` is a single-root launch WITHOUT the
  * seam: the extension runs on the system clock and real timers, exactly as shipped.
  */
 export type Variant = 'single' | 'multi' | 'none' | 'real';
@@ -131,7 +131,7 @@ export function prepareLayout(variant: Variant, fixturesDir: string): Layout {
   const outside = join(root, 'outside');
   copyFixtureTree(join(fixturesDir, 'outside'), outside);
 
-  const env: Record<string, string> = { FILE_SHAKE_TEST: variant === 'real' ? '0' : '1', FS_TEST_VARIANT: variant, FS_TEST_ROOT: root, FS_TEST_OUTSIDE: outside };
+  const env: Record<string, string> = { CHANGESCOPE_TEST: variant === 'real' ? '0' : '1', FS_TEST_VARIANT: variant, FS_TEST_ROOT: root, FS_TEST_OUTSIDE: outside };
   // optional: run a subset of tests (mocha --grep) while debugging
   const grep = process.env['FS_TEST_GREP'];
   if (grep) env['FS_TEST_GREP'] = grep;

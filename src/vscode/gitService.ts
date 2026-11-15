@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { buildRepoSnapshot, headChanged } from '../core/git/gitModel';
 import type { RawRepo, RepoSnapshot } from '../core/git/gitModel';
 import { isUnder } from '../core/pathUtils';
@@ -107,7 +107,7 @@ export type GitServiceState = 'disabled' | 'unavailable' | 'loading' | 'ready';
 
 export interface GitServiceDeps {
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   log(msg: string): void;
   /** quiet time before repository state is read again; 0 reads at once and uses no timer */
   debounceMs: number;
@@ -138,7 +138,7 @@ export class GitService implements vscode.Disposable {
     this.starting = true;
     try {
       this.release();
-      if (!this.deps.getConfig().gitEnabled) return this.set('disabled', 'Git integration is turned off (fileShake.git.enabled).');
+      if (!this.deps.getConfig().gitEnabled) return this.set('disabled', 'Git integration is turned off (changescope.git.enabled).');
       this.set('loading', 'Looking for the Git extension.');
       const ext = vscode.extensions.getExtension<unknown>('vscode.git');
       if (ext === undefined) return this.set('unavailable', 'The built-in Git extension (vscode.git) is not installed.');
@@ -188,7 +188,7 @@ export class GitService implements vscode.Disposable {
     if (enabled && (this.current === 'disabled' || (this.current === 'unavailable' && this.api === undefined))) void this.start();
     else if (!enabled && this.current !== 'disabled') {
       this.release();
-      this.set('disabled', 'Git integration is turned off (fileShake.git.enabled).');
+      this.set('disabled', 'Git integration is turned off (changescope.git.enabled).');
     }
   }
 

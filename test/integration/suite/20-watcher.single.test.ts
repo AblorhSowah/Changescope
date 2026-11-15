@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { K } from '../../../src/core/constants';
 import {
   colorIdOf,
@@ -27,7 +27,7 @@ import {
 } from './helpers';
 
 suite('Disk changes seen by the file watcher (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -67,7 +67,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
     assert.ok(Math.abs(row.intensity - 0.8647) < 0.005, `external write intensity ${row.intensity}`);
     const d = must(decorationOf(api, c));
     assert.equal(d.badge, '◆');
-    assert.equal(colorIdOf(d), 'fileShake.editedForeground');
+    assert.equal(colorIdOf(d), 'changescope.editedForeground');
     assert.ok(logFor(api, (e) => e.key === keyOf(c) && e.origin === 'watcher' && e.decision === 'external' && e.reason === 'disk-write').length >= 1);
     assert.equal(api.getStatusText(), '$(pulse) c.ts · external');
   });
@@ -90,7 +90,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
     assert.equal(util.role, 'referenced');
     assert.equal(util.refCount, 3, 'one import statement + two uses of helper');
     assert.equal(must(rowOf(api, keyOf(join(ws, 'b.ts')))).refCount, 2, 'one import statement + one use of b1');
-    assert.equal(colorIdOf(decorationOf(api, join(ws, 'src', 'util.ts'))), 'fileShake.referencedForeground');
+    assert.equal(colorIdOf(decorationOf(api, join(ws, 'src', 'util.ts'))), 'changescope.referencedForeground');
   });
 
   test('deleting a tracked file removes its row (no exception, state consistent)', async function () {
@@ -175,7 +175,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
     assert.equal(api.getRows().filter((r) => r.role === 'referenced').length, 0, 'no references from a file over the size cap');
     assert.equal(must(rowOf(api, keyOf(big))).role, 'edited');
     // control: the same import in a normal-sized file does resolve
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     const small = writeFile(dir, 'small.ts', "import '../b';\n");
     await waitUntil(api, () => rowOf(api, keyOf(small)) !== undefined, 'the small control file', 45_000);
     await settleRefs(api);
@@ -197,7 +197,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
     const dir = scratch('reload');
     const f = writeFile(dir, 'open.ts', 'export const v = 1;\n');
     await waitUntil(api, () => rowOf(api, keyOf(f)) !== undefined, 'the create event', 45_000);
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     testing(api).advance(10_000);
     const doc = await openDoc(f);
     await vscode.window.showTextDocument(doc, { preview: false });

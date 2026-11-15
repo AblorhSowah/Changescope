@@ -8,15 +8,15 @@ const edited = (name: string, o: Partial<ViewRow> = {}): ViewRow => viewRow(`/ws
 const referenced = (name: string): ViewRow => viewRow(`/ws/${name}`, { name, role: 'referenced', source: null, refCount: 2, badge: '×2 refs' });
 
 describe('buildStatus', () => {
-  it('disabled -> "$(circle-slash) File Shake: off"', () => {
-    assert.equal(buildStatus({ enabled: false, rows: [] }).text, '$(circle-slash) File Shake: off');
-    assert.equal(buildStatus({ enabled: false, rows: [edited('a.ts')] }).text, '$(circle-slash) File Shake: off', 'rows are ignored while disabled');
+  it('disabled -> "$(circle-slash) Changescope: off"', () => {
+    assert.equal(buildStatus({ enabled: false, rows: [] }).text, '$(circle-slash) Changescope: off');
+    assert.equal(buildStatus({ enabled: false, rows: [edited('a.ts')] }).text, '$(circle-slash) Changescope: off', 'rows are ignored while disabled');
     assert.ok(buildStatus({ enabled: false, rows: [] }).tooltip.length > 0);
   });
 
-  it('nothing active -> "$(pulse) File Shake"', () => {
+  it('nothing active -> "$(pulse) Changescope"', () => {
     const s = buildStatus({ enabled: true, rows: [] });
-    assert.equal(s.text, '$(pulse) File Shake');
+    assert.equal(s.text, '$(pulse) Changescope');
     assert.ok(s.tooltip.length > 0);
   });
 
@@ -44,20 +44,20 @@ describe('buildStatus', () => {
 
   it('only idle edited rows -> falls back to the plain label or the first idle row, never throws', () => {
     const s = buildStatus({ enabled: true, rows: [edited('old.ts', { phase: 'idle', intensity: 0 })] });
-    assert.ok(s.text === '$(pulse) File Shake' || s.text.startsWith('$(pulse) old.ts'), s.text);
+    assert.ok(s.text === '$(pulse) Changescope' || s.text.startsWith('$(pulse) old.ts'), s.text);
   });
 
   it('tooltip: header with E edited / R referenced, then one line per edited row "name — badge"', () => {
     const rows = [edited('a.ts'), edited('b.ts', { source: 'external', badge: 'external' }), referenced('r1.ts'), referenced('r2.ts'), referenced('r3.ts')];
     const { tooltip } = buildStatus({ enabled: true, rows });
     const lines = tooltip.split('\n');
-    assert.equal(lines[0], 'File Shake — 2 edited, 3 referenced');
+    assert.equal(lines[0], 'Changescope — 2 edited, 3 referenced');
     assert.deepEqual(lines.slice(1), ['a.ts — typing', 'b.ts — external']);
   });
 
   it('tooltip for referenced-only or empty state is still well-formed', () => {
     const { tooltip } = buildStatus({ enabled: true, rows: [] });
-    assert.equal(tooltip.split('\n')[0], 'File Shake — 0 edited, 0 referenced');
+    assert.equal(tooltip.split('\n')[0], 'Changescope — 0 edited, 0 referenced');
   });
 
   it('hostile names appear verbatim as text (status bar text is rendered as plain text by VS Code)', () => {

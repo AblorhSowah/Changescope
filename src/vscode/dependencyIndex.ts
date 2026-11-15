@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { createExcludeMatcher, relativeForMatch } from '../core/glob';
 import { DepGraph, targetsFromReference } from '../core/intelligence/depGraph';
 import { analyseImpact } from '../core/intelligence/impact';
@@ -25,7 +25,7 @@ const MAX_REMEMBERED_IMPORTERS = 500;
 
 export interface DependencyIndexDeps {
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   now(): number;
   log(msg: string): void;
@@ -304,7 +304,7 @@ export class DependencyIndex implements vscode.Disposable {
     if (!this.disposed) this.emitter.fire();
   }
 
-  private isIgnored(cfg: FileShakeConfig): (key: FileKey) => boolean {
+  private isIgnored(cfg: ChangescopeConfig): (key: FileKey) => boolean {
     const id = JSON.stringify([cfg.excludeGlobs, cfg.sensitiveGlobs]);
     if (this.matcher?.key !== id) {
       this.matcher = {
@@ -410,7 +410,7 @@ export class DependencyIndex implements vscode.Disposable {
   /** Reads one file (its open document when there is one) and replaces its edges. A file that cannot be read keeps its old edges out. */
   private async analyseOne(
     key: FileKey,
-    cfg: FileShakeConfig,
+    cfg: ChangescopeConfig,
     fs: ProbeFs,
     projects: Map<string, Promise<ProjectInfo>>,
     roots: readonly FileKey[],

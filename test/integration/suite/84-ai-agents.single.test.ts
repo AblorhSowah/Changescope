@@ -5,12 +5,12 @@ import assert from 'node:assert/strict';
 import { appendFileSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { createSettled, envPath, getApi, keyOf, must, openDoc, removePath, scratchDir, setConfig, testing, typeAndWait, waitUntil, workspaceDir } from './helpers';
 import { activeSession, dashboardState, externalChange, lastEventFor, mockProvider, resetAll, resetHistory, run, send, summarizeNow } from './helpers030';
 
 suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
   const handles: Array<{ dispose(): void }> = [];
@@ -31,14 +31,14 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       prompts.push({ message, detail });
       return Promise.resolve(answer);
     });
-    await run('fileShake.ai.resetConsent');
+    await run('changescope.ai.resetConsent');
   });
 
   teardown(async function () {
     this.timeout(60_000);
     for (const h of handles.splice(0)) h.dispose();
     await resetAll(api);
-    await run('fileShake.ai.resetConsent');
+    await run('changescope.ai.resetConsent');
     for (const d of created.splice(0)) removePath(d);
   });
 
@@ -133,7 +133,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       assert.equal((await summarizeNow(api)).provider, 'local');
       assert.equal(prompts.length, 1);
       assert.equal(mock.calls.length, 0, 'never sent');
-      await run('fileShake.ai.resetConsent');
+      await run('changescope.ai.resetConsent');
       answer = 'Allow';
       assert.equal((await summarizeNow(api)).provider, 'acme.test');
       assert.equal(prompts.length, 2, 'asked again after the reset');
@@ -345,7 +345,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       assert.equal(must(lastEventFor(api, keyOf(w))).sourceType, 'external');
     });
 
-    test('a signal file that is emptied while File Shake runs is read again from the start', async function () {
+    test('a signal file that is emptied while Changescope runs is read again from the start', async function () {
       this.timeout(150_000);
       const path = await enable();
       const made = await createSettled(api, scratch('signal-trunc'), { 'a.ts': 'export const a = 1;\n', 'b.ts': 'export const b = 1;\n' });
@@ -382,7 +382,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       await waitUntil(api, () => lastEventFor(api, keyOf(b))?.sourceType === 'ai-agent', 'the refilled file to be read from its start', 30_000);
     });
 
-    test('File Shake empties the file once it passes 1 MB, and keeps reading afterwards', async function () {
+    test('Changescope empties the file once it passes 1 MB, and keeps reading afterwards', async function () {
       this.timeout(180_000);
       const path = await enable();
       const made = await createSettled(api, scratch('signal-big'), { 'a.ts': 'export const a = 1;\n' });
@@ -391,7 +391,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       const filler = `${JSON.stringify({ agent: 'filler', file: '/nowhere/filler.ts', pad: 'f'.repeat(1000) })}\n`;
       appendFileSync(path, filler.repeat(1100));
       assert.ok(statSync(path).size > 1024 * 1024);
-      await waitUntil(api, () => statSync(path).size < 1024 * 1024, 'the oversized file to be emptied by File Shake', 60_000);
+      await waitUntil(api, () => statSync(path).size < 1024 * 1024, 'the oversized file to be emptied by Changescope', 60_000);
       testing(api).advance(6000);
       appendFileSync(path, lineFor(a));
       await externalChange(api, a, 'export const a = 2;\n');
@@ -410,7 +410,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       await externalChange(api, a, 'export const a = 2;\n');
       testing(api).advance(500);
       assert.equal(must(lastEventFor(api, keyOf(a))).sourceType, 'external');
-      await run('fileShake.copyAgentHook');
+      await run('changescope.copyAgentHook');
       const clip = await vscode.env.clipboard.readText();
       assert.match(clip, /PostToolUse/);
       assert.ok(clip.includes('agent-events.jsonl'));
@@ -477,7 +477,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
       const outside = join(envPath('FS_TEST_OUTSIDE'), 'o2.ts');
       const flood = Array.from({ length: 400 }, (_, i) => `/nowhere/at/all/f${i}.ts`);
       assert.doesNotThrow(() => api.reportAgentActivity({ agent: 'claude-code', files: ['/etc/passwd', '/', vscode.Uri.file(outside), ...flood] }));
-      // a file outside the workspace has no watcher, so the one change File Shake can see is an edit made through VS Code in
+      // a file outside the workspace has no watcher, so the one change Changescope can see is an edit made through VS Code in
       // the background (a document that is not the focused editor): that is "Automated", which an agent report upgrades
       await vscode.window.showTextDocument(await openDoc(join(envPath('FS_TEST_OUTSIDE'), 'o1.ts')), { preview: false });
       const doc = await openDoc(outside);

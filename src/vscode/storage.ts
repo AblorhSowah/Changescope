@@ -16,7 +16,7 @@ export interface HistoryStorageDeps {
   log(msg: string): void;
 }
 
-/** Debounced writer for the persisted history (workspace Memento, key `fileShake.history`). */
+/** Debounced writer for the persisted history (workspace Memento, key `changescope.history`). */
 export class HistoryStorage implements vscode.Disposable {
   private timer: { cancel(): void } | undefined;
   private build: (() => unknown) | undefined;

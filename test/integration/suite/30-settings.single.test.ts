@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { K } from '../../../src/core/constants';
 import {
   decorationOf,
@@ -27,7 +27,7 @@ import {
 } from './helpers';
 
 suite('Settings apply live (single-root workspace)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const ws = workspaceDir();
   const created: string[] = [];
 
@@ -92,7 +92,7 @@ suite('Settings apply live (single-root workspace)', () => {
   test('idleTimeoutMs is re-applied without a restart', async function () {
     this.timeout(60_000);
     await setConfig('idleTimeoutMs', 500);
-    await waitUntil(api, () => vscode.workspace.getConfiguration('fileShake').get('idleTimeoutMs') === 500, 'config value');
+    await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('idleTimeoutMs') === 500, 'config value');
     const a = join(ws, 'a.ts');
     await typeAndWait(api, await openDoc(a));
     testing(api).advance(499);
@@ -180,7 +180,7 @@ suite('Settings apply live (single-root workspace)', () => {
   test('maxFiles trims the rows (edited first)', async function () {
     this.timeout(90_000);
     await setConfig('maxFiles', 5);
-    await waitUntil(api, () => vscode.workspace.getConfiguration('fileShake').get('maxFiles') === 5, 'maxFiles=5');
+    await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('maxFiles') === 5, 'maxFiles=5');
     const dir = scratchDir(ws, 'many');
     created.push(dir);
     for (let i = 0; i < 8; i++) {

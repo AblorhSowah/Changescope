@@ -1,5 +1,5 @@
-/* File Shake view. Colours come from the contributed theme colours (so Explorer decorations and this
-   view agree) unless the user set fileShake.colors.* (--fs-*-override, set by the script). */
+/* Changescope view. Colours come from the contributed theme colours (so Explorer decorations and this
+   view agree) unless the user set changescope.colors.* (--fs-*-override, set by the script). */
 
 html, body {
   margin: 0;
@@ -14,8 +14,8 @@ body {
 }
 
 #app {
-  --fs-edited: var(--fs-edited-override, var(--vscode-fileShake-editedForeground, #3fb950));
-  --fs-referenced: var(--fs-referenced-override, var(--vscode-fileShake-referencedForeground, #e3b341));
+  --fs-edited: var(--fs-edited-override, var(--vscode-changescope-editedForeground, #3fb950));
+  --fs-referenced: var(--fs-referenced-override, var(--vscode-changescope-referencedForeground, #e3b341));
   padding: 2px 0 6px;
   overflow-x: hidden;
 }

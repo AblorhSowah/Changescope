@@ -19,7 +19,7 @@ function mount(o: Parameters<typeof mountDash>[0] = {}): DashHarness {
 const shaking = (d: DashHarness): HTMLElement[] => d.qa('.is-shaking');
 
 describe('dashboard: when a row may shake', () => {
-  it('only in live mode, for phase=active and intensity>0, with animation on, motion allowed and File Shake enabled', () => {
+  it('only in live mode, for phase=active and intensity>0, with animation on, motion allowed and Changescope enabled', () => {
     const d = mount();
     d.send(
       dashState({

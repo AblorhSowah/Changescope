@@ -18,7 +18,7 @@ export const IMPACT_NOTE = 'Impact levels are estimates from import edges. They 
 export function indexNotice(s: DashboardState): { text: string; tone: 'info' | 'warning' } | null {
   const i = s.index;
   if (!s.settings.dependencyIndex || i.state === 'off') {
-    return { text: 'The dependency index is turned off (fileShake.dependencies.index), so dependencies and impact are not available.', tone: 'info' };
+    return { text: 'The dependency index is turned off (changescope.dependencies.index), so dependencies and impact are not available.', tone: 'info' };
   }
   if (i.state === 'indexing') {
     return { text: i.total > 0 ? `Indexing dependencies: ${formatCount(i.indexed)} of ${formatCount(i.total)} files.` : 'Indexing dependencies.', tone: 'info' };

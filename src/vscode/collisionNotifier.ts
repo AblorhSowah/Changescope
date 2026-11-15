@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { COLLISION_ACTIONS, collisionMessage, shouldNotify } from '../core/activity/collision';
 import type { RawEvent } from '../core/activity/attribution';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { basename } from '../core/pathUtils';
 import type { Clock, FileKey } from '../core/types';
 import { fileKeyFromUri, uriFromKey } from './uriKey';
@@ -11,14 +11,14 @@ export type NotifyFn = (message: string, actions: readonly string[]) => Thenable
 
 export interface CollisionNotifierDeps {
   clock: Clock;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   log(msg: string): void;
 }
 
 const MAX_TRACKED = 200;
 
 /**
- * Warns when something changes a file on disk while its document has unsaved edits. File Shake never
+ * Warns when something changes a file on disk while its document has unsaved edits. Changescope never
  * writes to or reloads the document: VS Code keeps the unsaved buffer, and the user decides.
  */
 export class CollisionNotifier implements vscode.Disposable {

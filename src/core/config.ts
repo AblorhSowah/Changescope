@@ -2,7 +2,7 @@ import { COLOR_PATTERN, K } from './constants';
 import type { TrackerOptions } from './activityTracker';
 import type { ViewMode } from './types';
 
-export interface FileShakeConfig {
+export interface ChangescopeConfig {
   enable: boolean;
   enableAnimation: boolean;
   idleTimeoutMs: number;
@@ -85,7 +85,7 @@ const AI_MODES: readonly AiMode[] = ['local', 'assisted'];
 /** provider ids are short opaque tokens, never paths or free text */
 export const PROVIDER_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
-export const DEFAULT_CONFIG: FileShakeConfig = {
+export const DEFAULT_CONFIG: ChangescopeConfig = {
   enable: true,
   enableAnimation: true,
   idleTimeoutMs: 2500,
@@ -142,7 +142,7 @@ function strings(v: unknown, def: readonly string[]): string[] {
 }
 
 /** Total: never throws; every invalid value falls back to its default or is clamped. */
-export function sanitizeConfig(raw: Readonly<Record<string, unknown>>): FileShakeConfig {
+export function sanitizeConfig(raw: Readonly<Record<string, unknown>>): ChangescopeConfig {
   const d = DEFAULT_CONFIG;
   try {
     const r: Readonly<Record<string, unknown>> = typeof raw === 'object' && raw !== null ? raw : {};
@@ -182,7 +182,7 @@ export function sanitizeConfig(raw: Readonly<Record<string, unknown>>): FileShak
   }
 }
 
-export function toTrackerOptions(c: FileShakeConfig): TrackerOptions {
+export function toTrackerOptions(c: ChangescopeConfig): TrackerOptions {
   return {
     windowMs: c.windowMs,
     idleTimeoutMs: c.idleTimeoutMs,

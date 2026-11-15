@@ -1,4 +1,4 @@
-# File Shake 0.3.0 benchmarks
+# Changescope 0.3.0 benchmarks
 
 Measured by the Tester with `test/perf/bench030.ts`. These are measurements on one machine, not certificates: the thresholds in
 `docs/DESIGN-0.3.0.md` section 13 are regression guards (`test/unit/performance030.test.ts`), not promises.

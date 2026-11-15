@@ -287,7 +287,7 @@ const fmt = (ms: number): string => (ms >= 100 ? ms.toFixed(0) : ms >= 10 ? ms.t
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ info, results }, null, 2));
 } else {
-  console.log(`File Shake 0.3.0 benchmarks: ${info.date}`);
+  console.log(`Changescope 0.3.0 benchmarks: ${info.date}`);
   console.log(`${info.platform}; ${info.cpu}; ${info.memoryGiB} GiB; Node ${info.node}; median of ${RUNS} runs after ${WARMUP} warm-ups\n`);
   console.log('| Case | Median ms | Min ms | Max ms | Detail |');
   console.log('|---|---|---|---|---|');

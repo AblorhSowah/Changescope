@@ -14,11 +14,11 @@ describe('buildDecorations', () => {
     const m = buildDecorations([viewRow('/ws/a.ts'), viewRow('/ws/b.ts', { source: 'external' })], OPTS);
     const a = must(m.get('/ws/a.ts'));
     assert.equal(a.badge, '●');
-    assert.equal(a.colorId, 'fileShake.editedForeground');
+    assert.equal(a.colorId, 'changescope.editedForeground');
     assert.equal(a.role, 'edited');
     const b = must(m.get('/ws/b.ts'));
     assert.equal(b.badge, '◆');
-    assert.equal(b.colorId, 'fileShake.editedForeground');
+    assert.equal(b.colorId, 'changescope.editedForeground');
   });
 
   it('referenced -> decimal count in the referenced colour, "9+" from 10', () => {
@@ -29,7 +29,7 @@ describe('buildDecorations', () => {
     assert.deepEqual([10, 11, 100, 100000].map(badge), ['9+', '9+', '9+', '9+']);
     for (const n of [1, 10]) {
       const spec = must(m.get(`/ws/r${n}.ts`));
-      assert.equal(spec.colorId, 'fileShake.referencedForeground');
+      assert.equal(spec.colorId, 'changescope.referencedForeground');
       assert.equal(spec.role, 'referenced');
     }
   });
@@ -46,9 +46,9 @@ describe('buildDecorations', () => {
     }
   });
 
-  it('tooltips carry the "File Shake: " prefix', () => {
+  it('tooltips carry the "Changescope: " prefix', () => {
     const m = buildDecorations([viewRow('/ws/a.ts'), ref('/ws/b.ts', 3)], OPTS);
-    for (const spec of m.values()) assert.ok(spec.tooltip.startsWith('File Shake: '), spec.tooltip);
+    for (const spec of m.values()) assert.ok(spec.tooltip.startsWith('Changescope: '), spec.tooltip);
   });
 
   it('propagate follows decorateFolders', () => {
@@ -92,8 +92,8 @@ describe('changedKeys', () => {
   const spec = (o: Partial<DecorationSpec> = {}): DecorationSpec => ({
     role: 'edited',
     badge: '●',
-    tooltip: 'File Shake: edited',
-    colorId: 'fileShake.editedForeground',
+    tooltip: 'Changescope: edited',
+    colorId: 'changescope.editedForeground',
     propagate: true,
     ...o,
   });
@@ -116,8 +116,8 @@ describe('changedKeys', () => {
     const base = map([['/a', spec()]]);
     for (const patch of [
       { badge: '◆' },
-      { tooltip: 'File Shake: other' },
-      { colorId: 'fileShake.referencedForeground' as const },
+      { tooltip: 'Changescope: other' },
+      { colorId: 'changescope.referencedForeground' as const },
       { propagate: false },
       { role: 'referenced' as const },
     ]) {
@@ -127,7 +127,7 @@ describe('changedKeys', () => {
 
   it('mixed add / remove / change / unchanged', () => {
     const prev = map([['/keep', spec()], ['/change', spec()], ['/gone', spec()]]);
-    const next = map([['/keep', spec()], ['/change', spec({ badge: '2', role: 'referenced', colorId: 'fileShake.referencedForeground' })], ['/new', spec()]]);
+    const next = map([['/keep', spec()], ['/change', spec({ badge: '2', role: 'referenced', colorId: 'changescope.referencedForeground' })], ['/new', spec()]]);
     assert.deepEqual(changedKeys(prev, next).sort(), ['/change', '/gone', '/new']);
   });
 

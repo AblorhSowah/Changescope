@@ -167,13 +167,13 @@ describe('static policy: TypeScript hygiene across src', () => {
 });
 
 describe('static policy: commands declared in package.json are registered in code', () => {
-  it('every contributed command id appears in src (registerCommand) and no unlisted fileShake.* command is registered', () => {
+  it('every contributed command id appears in src (registerCommand) and no unlisted changescope.* command is registered', () => {
     const pkg = JSON.parse(read(join(REPO_ROOT, 'package.json'))) as { contributes: { commands: Array<{ command: string }> } };
     const declared = pkg.contributes.commands.map((c) => c.command).sort();
     const src = allSrc.map((f) => strip(read(f), { strings: false })).join('\n');
     for (const id of declared) assert.ok(src.includes(`'${id}'`) || src.includes(`"${id}"`), `${id} is declared but never mentioned in src`);
     const registered = [...src.matchAll(/registerCommand\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1] as string);
-    const stray = registered.filter((id) => id.startsWith('fileShake.') && !declared.includes(id));
+    const stray = registered.filter((id) => id.startsWith('changescope.') && !declared.includes(id));
     assert.deepEqual(stray, [], 'commands registered but not contributed in package.json');
   });
 });

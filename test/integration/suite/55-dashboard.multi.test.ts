@@ -3,12 +3,12 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { envPath, getApi, keyOf, must, openDoc, setConfig, testing, typeAndWait, waitUntil } from './helpers';
 import { activeSession, dashboardState, mockProvider, resetAll, run, send, summarizeNow } from './helpers030';
 
 suite('0.3.0 multi-root workspace (alpha + beta)', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const alpha = (): string => envPath('FS_TEST_ALPHA');
   const beta = (): string => envPath('FS_TEST_BETA');
   const handles: Array<{ dispose(): void }> = [];
@@ -57,7 +57,7 @@ suite('0.3.0 multi-root workspace (alpha + beta)', () => {
     const id = must(activeSession(api)).id;
     send(api, { type: 'sessionStop' });
     const before = new Set(vscode.workspace.textDocuments);
-    await run('fileShake.exportSessionReport', id);
+    await run('changescope.exportSessionReport', id);
     await waitUntil(api, () => vscode.workspace.textDocuments.some((d) => !before.has(d) && d.languageId === 'markdown'), 'the report', 20_000);
     const text = must(vscode.workspace.textDocuments.find((d) => !before.has(d) && d.languageId === 'markdown')).getText();
     assert.match(text, /\| alpha\/shared\.ts \|/);

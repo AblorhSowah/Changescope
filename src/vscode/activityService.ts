@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { HINT_WINDOW_MS, HintBook, attribute, hintCovers, upgradeWithHint } from '../core/activity/attribution';
 import type { Attribution, Hint, RawEvent } from '../core/activity/attribution';
 import { EventStore, deleteTargets } from '../core/activity/eventStore';
-import type { FileShakeConfig } from '../core/config';
+import type { ChangescopeConfig } from '../core/config';
 import { toSafeDisplayPath } from '../core/pathUtils';
 import { buildSessionReport } from '../core/sessions/report';
 import { SessionManager } from '../core/sessions/sessionManager';
@@ -12,12 +12,12 @@ import { HistoryStorage } from './storage';
 import type { MementoLike } from './storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-export const PAUSED_CONTEXT_KEY = 'fileShake.paused';
+export const PAUSED_CONTEXT_KEY = 'changescope.paused';
 
 export interface ActivityServiceDeps {
   clock: Clock;
   scheduler: Scheduler;
-  getConfig(): FileShakeConfig;
+  getConfig(): ChangescopeConfig;
   getRoots(): WorkspaceRoot[];
   /** opaque id of the workspace (never a path) */
   workspaceId: string;

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
-import type { FileShakeApi } from '../../../src/extension';
+import type { ChangescopeApi } from '../../../src/extension';
 import { colorIdOf, decorationOf, envPath, getApi, keyOf, logFor, must, openDoc, resetConfig, resetState, rowOf, setConfig, settleRefs, testing, typeAndWait, waitUntil } from './helpers';
 
 suite('No folder open', () => {
-  let api: FileShakeApi;
+  let api: ChangescopeApi;
   const o1 = (): string => join(envPath('FS_TEST_OUTSIDE'), 'o1.ts');
   const o2 = (): string => join(envPath('FS_TEST_OUTSIDE'), 'o2.ts');
 
@@ -33,7 +33,7 @@ suite('No folder open', () => {
   test('activation worked and the model is empty', () => {
     assert.equal(api.apiVersion, 1);
     assert.deepEqual(api.getRows(), []);
-    assert.equal(api.getStatusText(), '$(pulse) File Shake');
+    assert.equal(api.getStatusText(), '$(pulse) Changescope');
   });
 
   test('typing in a loose file is tracked: green row grouped under "(outside workspace)"', async function () {
@@ -46,7 +46,7 @@ suite('No folder open', () => {
     assert.equal(row.dir, keyOf(envPath('FS_TEST_OUTSIDE')));
     const d = must(decorationOf(api, o1()));
     assert.equal(d.badge, '●');
-    assert.equal(colorIdOf(d), 'fileShake.editedForeground');
+    assert.equal(colorIdOf(d), 'changescope.editedForeground');
     assert.equal(api.getStatusText(), '$(pulse) o1.ts · typing');
   });
 
@@ -76,10 +76,10 @@ suite('No folder open', () => {
 
   test('commands work without a workspace', async () => {
     await typeAndWait(api, await openDoc(o1()));
-    await vscode.commands.executeCommand('fileShake.clear');
+    await vscode.commands.executeCommand('changescope.clear');
     assert.deepEqual(api.getRows(), []);
-    await vscode.commands.executeCommand('fileShake.showDebugInfo');
-    await vscode.commands.executeCommand('fileShake.focusView');
+    await vscode.commands.executeCommand('changescope.showDebugInfo');
+    await vscode.commands.executeCommand('changescope.focusView');
   });
 
   test('idle clean-up works without a workspace', async function () {
