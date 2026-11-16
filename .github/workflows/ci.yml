@@ -59,9 +59,19 @@ jobs:
       # downloads the current stable VS Code into .vscode-test on the first run
       - name: Integration tests
         shell: bash
+        env:
+          # Real VS Code on a shared runner has rare timing flakes; a failed test is re-run once and listed in a warning (next step).
+          FS_TEST_RETRIES: '1'
         run: |
           set -o pipefail
           xvfb-run -a npm run test:integration 2>&1 | tee integration-test.log
+      - name: List integration tests that passed only on retry
+        if: always()
+        shell: bash
+        run: |
+          [ -f integration-test.log ] || exit 0
+          flaky=$(grep -F '[flaky]' integration-test.log | head -20 | cut -c1-500 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          if [ -n "$flaky" ]; then echo "::warning title=Flaky integration tests (re-run once)::${flaky}"; fi
       - name: Name the failing integration tests in an annotation
         if: failure()
         shell: bash

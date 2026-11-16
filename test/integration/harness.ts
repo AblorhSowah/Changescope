@@ -135,6 +135,8 @@ export function prepareLayout(variant: Variant, fixturesDir: string): Layout {
   // optional: run a subset of tests (mocha --grep) while debugging
   const grep = process.env['FS_TEST_GREP'];
   if (grep) env['FS_TEST_GREP'] = grep;
+  const retries = process.env['FS_TEST_RETRIES'];
+  if (retries) env['FS_TEST_RETRIES'] = retries;
   let openArg: string | undefined;
   if (variant === 'single' || variant === 'real') {
     const ws = join(root, 'ws');

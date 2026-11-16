@@ -33,6 +33,7 @@ All commands run from the repository root. Only the Builder runs `npm install`.
 | `VSCODE_TEST_VERSION` / `FS_VSCODE_VERSION` | Version to download when `FS_VSCODE_EXE` is unset (default `stable`). |
 | `FS_INSTALLED_VSIX=<file.vsix>` | Run the suite against the **installed** extension: the `.vsix` is installed with the VS Code CLI into the launch's isolated extensions dir and a stub extension hosts the test runner. Needs `FS_VSCODE_EXE`. |
 | `FS_TEST_GREP=<regex>` | Run only integration tests whose title matches (mocha `--grep`). |
+| `FS_TEST_RETRIES=<n>` | Re-run a failed integration test up to `n` times (mocha retries; setup and teardown run again). Every retry is printed as `[flaky] ...`. CI sets it to 1 and turns those lines into a warning annotation; it is off by default, so local runs never hide a flake. |
 | `FS_KEEP_TMP=1` | Keep the temp directory of each launch (workspace copy, user-data dir) for post-mortems. |
 | `FS_TEST_TMP` | Parent directory for the temp dirs (default `/tmp`; keep it short, macOS limits unix socket paths to about 104 bytes). |
 
