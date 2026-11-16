@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 import type { ChangescopeApi } from '../../../src/extension';
@@ -22,8 +22,11 @@ import {
   trackedOf,
   waitUntil,
   waitUntilAdvancing,
+  waitUntilSeen,
   workspaceDir,
   writeFile,
+  warmScratchPool,
+  ensureWatched,
 } from './helpers';
 
 suite('Disk changes seen by the file watcher (single-root workspace)', () => {
@@ -38,6 +41,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetState(api);
     testing(api).overrideFocus(true);
   });
@@ -105,6 +109,7 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
   test('deleting a whole folder forgets everything under it', async function () {
     this.timeout(60_000);
     const dir = scratch('rmdir');
+    await ensureWatched(api, join(dir, 'sub'));
     const a = writeFile(dir, 'sub/a.ts', 'export {};\n');
     const b = writeFile(dir, 'sub/b.ts', 'export {};\n');
     await waitUntil(api, () => rowOf(api, keyOf(a)) !== undefined && rowOf(api, keyOf(b)) !== undefined, 'both rows', 45_000);
@@ -147,15 +152,16 @@ suite('Disk changes seen by the file watcher (single-root workspace)', () => {
     this.timeout(60_000);
     const dir = scratch('mkdir');
     const sub = join(dir, 'newdir');
-    mkdirSync(sub);
+    await ensureWatched(api, sub);
     const f = writeFile(sub, 'inside.ts', 'export {};\n');
-    await waitUntil(api, () => rowOf(api, keyOf(f)) !== undefined, 'the file inside the new directory', 45_000);
+    await waitUntilSeen(api, { [f]: 'export {};\n' }, (p) => rowOf(api, keyOf(p)) !== undefined, 'the file inside the new directory', 45_000);
     assert.equal(trackedOf(api, keyOf(sub)), undefined, 'the directory itself must not be tracked');
   });
 
   test('excluded paths written from outside are ignored: dist/, *.log, *.min.js, lock files', async function () {
     this.timeout(60_000);
     const dir = scratch('excluded');
+    await ensureWatched(api, join(dir, 'dist'));
     const files = [writeFile(dir, 'dist/out.js', '1;'), writeFile(dir, 'run.log', 'x'), writeFile(dir, 'app.min.js', '1;'), writeFile(dir, 'yarn.lock', 'x')];
     const marker = writeFile(dir, 'marker.ts', 'export {};\n');
     await waitUntil(api, () => rowOf(api, keyOf(marker)) !== undefined, 'the (non-excluded) marker file', 45_000);

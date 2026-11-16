@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 import type { ChangescopeApi } from '../../../src/extension';
-import { createSettled, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, removePath, runNode, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir } from './helpers';
+import { createSettled, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, removePath, runNode, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir, warmScratchPool } from './helpers';
 import { activeSession, dashboardState, eventsFor, externalChange, lastEventFor, occurrences, resetAll, resetHistory, run, send } from './helpers030';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -21,6 +21,7 @@ suite('0.3.0 activity history, sessions and persistence (single-root workspace)'
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetAll(api);
   });
 

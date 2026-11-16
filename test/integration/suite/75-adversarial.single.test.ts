@@ -27,6 +27,8 @@ import {
   waitUntilAdvancing,
   workspaceDir,
   writeFile,
+  warmScratchPool,
+  ensureWatched,
 } from './helpers';
 
 suite('Adversarial probes (single-root workspace)', () => {
@@ -42,6 +44,7 @@ suite('Adversarial probes (single-root workspace)', () => {
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetConfig();
     await resetState(api);
     testing(api).overrideFocus(true);
@@ -200,6 +203,7 @@ suite('Adversarial probes (single-root workspace)', () => {
   test('renaming a folder that contains a tracked file re-keys the state and leaves nothing under the old name', async function () {
     this.timeout(90_000);
     const dir = scratch('folder-rename');
+    await ensureWatched(api, join(dir, 'sub'));
     const f = writeFile(dir, 'sub/inner.ts', 'export {};\n');
     await waitUntil(api, () => trackedOf(api, keyOf(f)) !== undefined, 'the file to be tracked', 45_000);
     const edit = new vscode.WorkspaceEdit();
