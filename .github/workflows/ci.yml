@@ -36,7 +36,7 @@ jobs:
         run: |
           # The job log needs a GitHub login to read; annotations do not. Copy the failing tests and their errors into one.
           [ -f unit-test.log ] || exit 0
-          body=$( { grep -nE '(^|[[:space:]])(not ok|✖)|failing tests|AssertionError|Error:|budget is|expected|actual' unit-test.log | head -60; echo '--- last lines ---'; tail -n 25 unit-test.log; } | head -c 7000 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          body=$( { grep -nE '(^|[[:space:]])(not ok|✖)|failing tests|AssertionError|Error:|budget is|expected|actual' unit-test.log | head -60 || true; echo '--- last lines ---'; tail -n 25 unit-test.log; } | head -c 7000 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=Failing unit tests (${RUNNER_OS})::${body}"
 
   integration:
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           [ -f integration-test.log ] || exit 0
-          flaky=$(grep -F '[flaky]' integration-test.log | head -20 | cut -c1-500 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          flaky=$( { grep -F '[flaky]' integration-test.log || true; } | head -20 | cut -c1-500 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
           if [ -n "$flaky" ]; then echo "::warning title=Flaky integration tests (re-run once)::${flaky}"; fi
       - name: Name the failing integration tests in an annotation
         if: failure()
@@ -78,5 +78,5 @@ jobs:
         run: |
           # The job log needs a GitHub login to read; annotations do not. Copy each failing test and its error into one.
           [ -f integration-test.log ] || exit 0
-          body=$( { sed 's/\x1b\[[0-9;]*m//g' integration-test.log | awk '/^ +[0-9]+ failing/{f=1} f' | grep -vE '^[[:space:]]+at ' | head -70; echo '--- variants ---'; grep -E 'runTest\] (variant|failed)' integration-test.log; } | head -c 7000 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          body=$( { sed 's/\x1b\[[0-9;]*m//g' integration-test.log | awk '/^ +[0-9]+ failing/{f=1} f' | { grep -vE '^[[:space:]]+at ' || true; } | head -70; echo '--- variants ---'; grep -E 'runTest\] (variant|failed)' integration-test.log || true; } | head -c 7000 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=Failing integration tests::${body}"
