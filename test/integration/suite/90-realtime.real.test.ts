@@ -2,14 +2,40 @@
 // system clock and real timers exactly as shipped: the self-stopping tick chain, the 400 ms reference debounce and the 150 ms
 // dirty-state parking timer are all real here. Everything else in the suite runs on a fake scheduler and cannot see them.
 import assert from 'node:assert/strict';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 import type { ChangescopeApi } from '../../../src/extension';
-import { colorIdOf, decorationOf, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, rowOf, runNode, setConfig, trackedOf, typeInto, waitReal, workspaceDir } from './helpers';
+import { colorIdOf, decorationOf, envPath, externalWrite, getApi, keyOf, logFor, must, openDoc, rowOf, resetConfig, runNode, setConfig, trackedOf, typeInto, waitReal, workspaceDir } from './helpers';
 
 suite('Real clock, real timers (no test seam)', () => {
   let api: ChangescopeApi;
   const ws = workspaceDir();
+
+  /**
+   * VS Code's file watcher starts asynchronously, and a write made before it is live is never reported (there is no replay). Probes
+   * with an excluded *.log file, which the extension logs but never tracks, until its event shows up, so nothing is left behind.
+   */
+  async function watcherLive(dir: string): Promise<void> {
+    const probe = join(dir, `.live-probe-${Date.now()}.log`);
+    let lastWrite = 0;
+    try {
+      await waitReal(
+        () => {
+          if (logFor(api, (e) => e.key === keyOf(probe)).length > 0) return true;
+          if (Date.now() - lastWrite >= 500) {
+            lastWrite = Date.now();
+            writeFileSync(probe, 'probe\n');
+          }
+          return false;
+        },
+        'the file watcher to be live',
+        30_000,
+      );
+    } finally {
+      rmSync(probe, { force: true });
+    }
+  }
 
   suiteSetup(async function () {
     this.timeout(90_000);
@@ -18,6 +44,8 @@ suite('Real clock, real timers (no test seam)', () => {
 
   teardown(async function () {
     this.timeout(60_000);
+    // a test that changes a setting must not leak it into the next one (the timed-removal test turns persistence off)
+    await resetConfig();
     await vscode.commands.executeCommand('changescope.clear');
     for (const d of vscode.workspace.textDocuments) {
       if (d.isDirty) {
@@ -88,11 +116,27 @@ suite('Real clock, real timers (no test seam)', () => {
   test('an external process writes a file: one external row, the references of an externally written file are found with the real debounce', async function () {
     this.timeout(60_000);
     const src = join(ws, 'src', 'main.ts');
-    await externalWrite(src, "import { helper } from './util';\nimport { b1 } from '../b';\nhelper(b1());\nhelper(1);\n");
-    await waitReal(() => rowOf(api, keyOf(src))?.source === 'external', 'an external row', 15_000);
-    assert.ok(must(trackedOf(api, keyOf(src))).editCount <= 2);
+    const content = "import { helper } from './util';\nimport { b1 } from '../b';\nhelper(b1());\nhelper(1);\n";
+    await watcherLive(join(ws, 'src'));
+    // one write is enough once the watcher is live; a retry only covers an event lost on an overloaded machine
+    let writes = 0;
+    for (;;) {
+      writes += 1;
+      await externalWrite(src, content);
+      try {
+        await waitReal(() => rowOf(api, keyOf(src))?.source === 'external', 'an external row', 5_000);
+        break;
+      } catch (e) {
+        if (writes >= 3) throw e;
+      }
+    }
+    assert.ok(must(trackedOf(api, keyOf(src))).editCount <= 2 * writes, `editCount ${must(trackedOf(api, keyOf(src))).editCount} after ${writes} write(s)`);
     // reference analysis: real 400 ms debounce + real async fs
-    await waitReal(() => rowOf(api, keyOf(join(ws, 'src', 'util.ts')))?.role === 'referenced', 'util.ts to turn yellow', 15_000);
+    const t0 = Date.now();
+    await waitReal(() => rowOf(api, keyOf(join(ws, 'src', 'util.ts')))?.role === 'referenced', 'util.ts to turn yellow', 15_000).catch((e: unknown) => {
+      const state = { afterMs: Date.now() - t0, status: api.getStatusText(), rows: api.getRows(), tracked: api.getTracked(), log: api.getEventLog().slice(-12) };
+      throw new Error(`${e instanceof Error ? e.message : String(e)}\nmodel at the timeout: ${JSON.stringify(state)}`, { cause: e });
+    });
     const util = must(rowOf(api, keyOf(join(ws, 'src', 'util.ts'))));
     assert.equal(util.refCount, 3);
     assert.equal(must(rowOf(api, keyOf(join(ws, 'b.ts')))).refCount, 2);

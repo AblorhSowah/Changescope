@@ -613,3 +613,24 @@ The first real CI runs failed in the Ubuntu integration job (the Windows unit fa
 **Result.** Same container, three consecutive full runs after the final change: **single 169 pass, 2 pending, 0 fail; multi 28; none 31; real 6**, every time. macOS: single 168 pass and the one known failure (`undo is classified as you`, which needs VS Code in front; it passes there and on Linux); multi 28; none 31; real 6. Unit and webview: 2,501 of 2,501. This is an arm64 container, not GitHub's x64 runner, so the CI job itself has not been seen passing.
 
 **Not found by this round:** the cause of the CI failure that was reported as QA-006 in a pasted summary. The QA-006 test already accepts `burst` (the wait at `75-adversarial.single.test.ts`), and it passes on Linux; the summary did not match the code.
+
+## R4.2 Flaky `real` variant on CI (`Real clock, real timers`, test 4: an external process writes a file)
+
+After the Ubuntu fix above, CI ran the same code three times: the push run passed, and the squash-merge to `main` failed in the Ubuntu integration job (variant `real`, 5 passing, 1 failing); the pull-request run of the same commit failed in the Windows unit job instead (see below). Same commit, different outcomes: a flake, not a regression. The job log needs a login, so the failing step is not known; the pasted summary of it ("the extension did not update the reference graph") named no assertion and was a guess.
+
+**What was reproduced** (Ubuntu 24.04 arm64 container limited to 2 CPUs, `xvfb-run`, busy loops competing for the CPUs; 12 idle runs and 15 runs at moderate load passed except one):
+* 1 failure in about 10 loaded runs: `timed out after 15000 ms waiting for: util.ts to turn yellow`. The external row of `main.ts` existed; the cause was not captured (no model dump existed yet).
+* The same test run alone, as the first test in a fresh window, under load: `timed out ... waiting for: an external row`. The write was made before VS Code's file watcher was live and is never reported (there is no replay).
+* Not reproduced: shrinking `idleTimeoutMs` to its 500 ms minimum for that test does not break it on an idle machine (0.7 s), so a merely short active window is not the cause on its own.
+
+**What the code shows.** The suite never reset settings between tests: test 3 turns `persistUntilNextFile` off and left it off for tests 4 to 6. With it off, an idle row is dropped on a timer and the yellow (referenced) rows exist only while the referencing file is in its 2.5 s active window; with the default (on) idle rows persist and the references stay visible. So the fragility depended on a leaked setting, not on what users run.
+
+**Changes (test only, nothing in `src/`).**
+* The real suite now resets settings after every test (`resetConfig` in `teardown`).
+* `watcherLive(dir)`: before the external write, probes with an excluded `*.log` file (logged by the extension, never tracked) until the watcher reports it.
+* The external write is retried (at most 3 times, 5 s apart) if no external row appears; `editCount` is asserted against the number of writes.
+* If `util.ts` does not turn yellow, the failure message now includes the model at the timeout (status text, rows, tracked files, last 12 log entries), so the next occurrence explains itself.
+
+**Result.** Container: 4 idle runs and 6 loaded runs, all 6 of 6 passing (a seventh loaded run never started because VS Code hung at launch in the container and was killed; it says nothing about the test). macOS: 3 of 3. This does not prove the CI failure is fixed: the rate was about 1 in 10 under load, so 10 clean loaded runs is weak evidence, and the exact CI failure step is unknown. If it recurs, the log will now say what the model looked like.
+
+**The Windows unit failure of the pull-request run is not explained.** Every wall-clock assertion in `test/unit` and `test/webview` already goes through `scaled()`; the failing test needs the job log (look for lines starting `✖` in the "Run npm run test:unit" step).
