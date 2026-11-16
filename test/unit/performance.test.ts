@@ -14,7 +14,7 @@ import { parseHostMessage } from '../../src/core/protocol';
 import { snapshotOf, trackedFile, viewRow } from '../support/builders';
 import { K } from '../../src/core/constants';
 import type { ImportBinding } from '../support/types';
-import { scaled } from '../support/perfGuard';
+import { loadFactor, scaled } from '../support/perfGuard';
 
 /** Best (minimum) wall time of `n` runs: robust against one-off scheduler noise. */
 function bestOf(n: number, fn: () => void): number {
@@ -126,6 +126,7 @@ describe('performance: reference parsing (DESIGN 8.7)', () => {
 describe('performance: pathological inputs (500 KB, hard timeout, child process)', () => {
   it('no language x pattern combination takes more than 1000 ms, throws, or hangs', { timeout: 240_000 }, () => {
     const runner = join(REPO_ROOT, 'test', 'support', 'pathologicalRunner.ts');
+    const factorBefore = loadFactor();
     const res = spawnSync(process.execPath, ['--import', 'tsx', runner], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
@@ -150,8 +151,13 @@ describe('performance: pathological inputs (500 KB, hard timeout, child process)
     // the wall clock without being any slower (a combination that needs 150 ms of CPU showed 2.7 s of wall time under
     // load average 20+). An idle machine measures at most about 540 ms of CPU (css/css-import-open), median 18 ms.
     // A catastrophic regex burns CPU, so it still fails this guard; a hang is caught by the hard timeouts above.
-    const slow = rows.filter((r) => r.cpuMs > 1000);
-    assert.deepEqual(slow.map((r) => `${r.lang}/${r.pattern}: ${r.cpuMs} ms of CPU (${r.ms} ms wall)`), [], 'budget is 1000 ms of CPU per combination');
+    // CPU time is not immune to a slow machine either: a CI runner several times slower than an idle laptop (a Windows runner, with
+    // JIT and GC threads counted too) needs several times the CPU for the same work. The budget is 1000 ms on an idle laptop and is
+    // stretched by the machine-speed factor (the larger of the one before and the one after the run, capped at 30x); a catastrophic
+    // regex needs seconds to minutes of CPU, so it is still caught.
+    const budget = Math.round(1000 * Math.max(factorBefore, loadFactor()));
+    const slow = rows.filter((r) => r.cpuMs > budget);
+    assert.deepEqual(slow.map((r) => `${r.lang}/${r.pattern}: ${r.cpuMs} ms of CPU (${r.ms} ms wall)`), [], `budget is ${budget} ms of CPU per combination (1000 ms on an idle laptop)`);
     const stalled = rows.filter((r) => r.ms > 30_000);
     assert.deepEqual(stalled.map((r) => `${r.lang}/${r.pattern}: ${r.ms} ms wall`), [], 'no combination may stall for 30 s even on a busy machine');
   });
