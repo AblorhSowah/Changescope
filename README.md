@@ -34,8 +34,8 @@ Changescope is not on the Marketplace yet, so you install it from a `.vsix` file
 **1. Build the package**
 
 ```bash
-git clone https://github.com/AblorhSowah/file-shake.git
-cd file-shake
+git clone https://github.com/AblorhSowah/Changescope.git
+cd Changescope
 npm ci
 npm run package
 ```
@@ -61,6 +61,8 @@ Run **Developer: Reload Window**, open a project folder, and look for two things
 **Update:** pull the latest code, then run `npm ci`, `npm run package` and the install command again, and reload the window.
 
 **Uninstall:** `code --uninstall-extension changescope.changescope`, or use the Extensions view.
+
+**Coming from File Shake?** Changescope is the same extension under a new name and a new extension id, so VS Code treats it as a different extension and an installed File Shake keeps running next to it. Uninstall File Shake first (`code --uninstall-extension file-shake.file-shake`), then reload every open VS Code window. Settings and keybindings that start with `fileShake.` do not carry over; set them again under `changescope.`.
 
 ## The dashboard
 
