@@ -25,7 +25,19 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run lint
-      - run: npm run test:unit
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:unit 2>&1 | tee unit-test.log
+      - name: Name the failing unit tests in an annotation
+        if: failure()
+        shell: bash
+        run: |
+          # The job log needs a GitHub login to read; annotations do not. Copy the failing tests and their errors into one.
+          [ -f unit-test.log ] || exit 0
+          body=$( { grep -nE '(^|[[:space:]])(not ok|✖)|failing tests|AssertionError|Error:|budget is|expected|actual' unit-test.log | head -60; echo '--- last lines ---'; tail -n 25 unit-test.log; } | head -c 7000 | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Failing unit tests (${RUNNER_OS})::${body}"
 
   integration:
     name: integration tests (ubuntu, xvfb)
