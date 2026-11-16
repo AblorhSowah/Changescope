@@ -57,4 +57,16 @@ jobs:
           key: vscode-test-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
       # downloads the current stable VS Code into .vscode-test on the first run
-      - run: xvfb-run -a npm run test:integration
+      - name: Integration tests
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a npm run test:integration 2>&1 | tee integration-test.log
+      - name: Name the failing integration tests in an annotation
+        if: failure()
+        shell: bash
+        run: |
+          # The job log needs a GitHub login to read; annotations do not. Copy each failing test and its error into one.
+          [ -f integration-test.log ] || exit 0
+          body=$( { sed 's/\x1b\[[0-9;]*m//g' integration-test.log | awk '/^ +[0-9]+ failing/{f=1} f' | grep -vE '^[[:space:]]+at ' | head -70; echo '--- variants ---'; grep -E 'runTest\] (variant|failed)' integration-test.log; } | head -c 7000 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Failing integration tests::${body}"
