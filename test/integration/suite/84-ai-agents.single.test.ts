@@ -6,7 +6,7 @@ import { appendFileSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 import type { ChangescopeApi } from '../../../src/extension';
-import { createSettled, envPath, getApi, keyOf, must, openDoc, removePath, scratchDir, setConfig, testing, typeAndWait, waitUntil, workspaceDir } from './helpers';
+import { createSettled, envPath, getApi, keyOf, must, openDoc, removePath, scratchDir, setConfig, testing, typeAndWait, waitUntil, workspaceDir, warmScratchPool } from './helpers';
 import { activeSession, dashboardState, externalChange, lastEventFor, mockProvider, resetAll, resetHistory, run, send, summarizeNow } from './helpers030';
 
 suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
@@ -24,6 +24,7 @@ suite('0.3.0 AI foundation and agent adapters (single-root workspace)', () => {
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetAll(api);
     prompts.length = 0;
     answer = 'Allow';

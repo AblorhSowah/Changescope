@@ -25,6 +25,7 @@ import {
   typeAndWait,
   waitUntil,
   workspaceDir,
+  warmScratchPool,
 } from './helpers';
 
 suite('Persistence and the two users (single-root workspace)', () => {
@@ -39,6 +40,7 @@ suite('Persistence and the two users (single-root workspace)', () => {
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetConfig(); // persistUntilNextFile is on by default: this suite tests the default
     await resetState(api);
     testing(api).overrideFocus(true);

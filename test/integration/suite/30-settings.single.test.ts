@@ -5,6 +5,7 @@ import type { ChangescopeApi } from '../../../src/extension';
 import { K } from '../../../src/core/constants';
 import {
   decorationOf,
+  ensureWatched,
   getApi,
   keyOf,
   logFor,
@@ -22,6 +23,7 @@ import {
   typeAndWait,
   typeInto,
   waitUntil,
+  warmScratchPool,
   workspaceDir,
   writeFile,
 } from './helpers';
@@ -39,6 +41,7 @@ suite('Settings apply live (single-root workspace)', () => {
   setup(async function () {
     this.timeout(60_000);
     await resetConfig();
+    await warmScratchPool(api, ws);
     await resetState(api);
     testing(api).overrideFocus(true);
   });
@@ -155,6 +158,7 @@ suite('Settings apply live (single-root workspace)', () => {
     await setConfig('detectExternalEdits', false);
     const dir = scratchDir(ws, 'noext');
     created.push(dir);
+    await ensureWatched(api, dir);
     const f = writeFile(dir, 'quiet.ts', 'export {};\n');
     await waitUntil(api, () => logFor(api, (e) => e.key === keyOf(f) && e.reason === 'external-detection-off').length >= 1, 'an "external-detection-off" log entry', 45_000);
     assert.equal(trackedOf(api, keyOf(f)), undefined);
@@ -183,6 +187,7 @@ suite('Settings apply live (single-root workspace)', () => {
     await waitUntil(api, () => vscode.workspace.getConfiguration('changescope').get('maxFiles') === 5, 'maxFiles=5');
     const dir = scratchDir(ws, 'many');
     created.push(dir);
+    await ensureWatched(api, dir);
     for (let i = 0; i < 8; i++) {
       const f = writeFile(dir, `m${i}.ts`, 'export {};\n');
       await waitUntil(api, () => trackedOf(api, keyOf(f)) !== undefined, `tracked m${i}.ts`, 45_000);

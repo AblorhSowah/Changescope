@@ -5,7 +5,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import * as vscode from 'vscode';
 import type { ChangescopeApi } from '../../../src/extension';
-import { createSettled, externalWrite, getApi, keyOf, must, openDoc, removePath, resetConfig, runNode, rowOf, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir, writeFile } from './helpers';
+import { createSettled, externalWrite, getApi, keyOf, must, openDoc, removePath, resetConfig, runNode, rowOf, scratchDir, setConfig, settleRefs, testing, typeAndWait, typeInto, waitUntil, workspaceDir, writeFile, warmScratchPool } from './helpers';
 import { dashboardState, eventsFor, externalChange, lastEventFor, resetAll, resetHistory, run, send } from './helpers030';
 
 let touches = 0;
@@ -22,6 +22,7 @@ suite('0.3.0 dependency index, impact, collisions, sensitive files, Git (single-
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetAll(api);
   });
 

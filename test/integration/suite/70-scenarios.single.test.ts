@@ -31,6 +31,7 @@ import {
   waitUntilAdvancing,
   workspaceDir,
   writeFile,
+  warmScratchPool,
 } from './helpers';
 
 suite('Real-world scenarios (single-root workspace)', () => {
@@ -45,6 +46,7 @@ suite('Real-world scenarios (single-root workspace)', () => {
 
   setup(async function () {
     this.timeout(60_000);
+    await warmScratchPool(api, ws);
     await resetConfig();
     await resetState(api);
     testing(api).overrideFocus(true);

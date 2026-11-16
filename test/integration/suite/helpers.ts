@@ -5,8 +5,8 @@
 // fixed sleep.
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import type { ChangescopeApi } from '../../../src/extension';
 import type { LogEntry, TrackedFile, ViewRow } from '../../../src/core/types';
 import { normalizePath } from '../../../src/core/pathUtils';
@@ -151,11 +151,29 @@ export function removePath(p: string): void {
 
 /** A fresh, uniquely named scratch directory inside `base` (so tests never touch each other's files). */
 let scratchCounter = 0;
+const livePool = new Map<string, string[]>();
 export function scratchDir(base: string, label: string): string {
+  const pooled = livePool.get(base)?.shift(); // a directory the watcher is known to be live in (see warmScratchPool)
+  if (pooled) return pooled;
   scratchCounter += 1;
   const dir = join(base, `scratch-${label}-${scratchCounter}`);
   mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+/**
+ * Keeps `size` empty scratch directories ready in `base`, each one verified with ensureWatched, for scratchDir to hand out. Call it from an
+ * async setup: scratchDir itself is synchronous, and a directory that was created a moment ago may not be watched yet (see ensureWatched).
+ */
+export async function warmScratchPool(api: ChangescopeApi, base: string, size = 3): Promise<void> {
+  const pool = livePool.get(base) ?? [];
+  livePool.set(base, pool);
+  while (pool.length < size) {
+    scratchCounter += 1;
+    const dir = join(base, `scratch-pool-${scratchCounter}`);
+    await ensureWatched(api, dir);
+    pool.push(dir);
+  }
 }
 
 export function workspaceDir(): string {
@@ -229,12 +247,94 @@ export function externalWrite(file: string, content: string): Promise<void> {
  * with files that exist but are not "recently edited" (otherwise green would win over yellow).
  */
 export async function createSettled(api: ChangescopeApi, base: string, files: Record<string, string>): Promise<Record<string, string>> {
+  // The watcher must be live in every directory before a file is written into it (see ensureWatched), parents first.
+  const dirs = new Set<string>([base]);
+  for (const rel of Object.keys(files)) {
+    for (let d = dirname(join(base, rel)); d.length > base.length; d = dirname(d)) dirs.add(d);
+  }
+  for (const d of [...dirs].sort((a, b) => a.length - b.length)) await ensureWatched(api, d);
   const out: Record<string, string> = {};
-  for (const [rel, content] of Object.entries(files)) out[rel] = writeFile(base, rel, content);
-  const keys = Object.values(out).map(keyOf);
-  await waitUntil(api, () => keys.every((k) => trackedOf(api, k) !== undefined), 'the watcher to report every created file', 60_000);
+  const contents: Record<string, string> = {};
+  for (const [rel, content] of Object.entries(files)) {
+    out[rel] = writeFile(base, rel, content);
+    contents[out[rel] as string] = content;
+  }
+  await waitUntilSeen(api, contents, (p) => trackedOf(api, keyOf(p)) !== undefined, 'the watcher to report every created file', 60_000);
   await resetState(api);
   return out;
+}
+
+let probeCounter = 0;
+
+/**
+ * Makes sure VS Code's recursive file watcher is live in `dir`, creating the directory if it does not exist. Call it before writing
+ * files into a directory that was created moments ago.
+ *
+ * On Linux the watcher is inotify based, and inotify cannot watch a directory before it exists. A directory created in the short gap
+ * between its parent's scan and the new watch is then never watched at all, and no later write into it is ever reported (macOS and
+ * Windows do not have that gap). So this writes a probe file until the extension reports it. If it never does, the directory is
+ * removed and created again, which the parent's watch reports as a new directory; that is only done while the directory is empty, so
+ * it can never delete anything of value.
+ *
+ * The probe is a `*.log` file: excluded by default, so the extension logs the event but never tracks the file, records no history for
+ * it and does not react to its deletion. Probing therefore leaves no state behind and no late event for the next test.
+ */
+export async function ensureWatched(api: ChangescopeApi, dir: string): Promise<void> {
+  mkdirSync(dir, { recursive: true });
+  const text = 'probe\n';
+  for (let attempt = 0; attempt < 6; attempt++) {
+    probeCounter += 1;
+    const probe = join(dir, `.live-probe-${probeCounter}.log`);
+    writeFileSync(probe, text);
+    let live = true;
+    try {
+      await waitUntilSeen(api, { [probe]: text }, (p) => logFor(api, (e) => e.key === keyOf(p)).length > 0, 'the file watcher to be live in a directory', 4_000);
+    } catch {
+      live = false;
+    }
+    rmSync(probe, { force: true });
+    if (live) return;
+    if (readdirSync(dir).length > 0) break; // never remove a directory that has content
+    rmSync(dir, { recursive: true, force: true });
+    await delay(300);
+    mkdirSync(dir, { recursive: true });
+  }
+  throw new Error(`the file watcher did not become live in ${dir}`);
+}
+
+/**
+ * Like waitUntil for "the watcher has reported these files", but it also rewrites the files that are still unseen every ~750 ms of
+ * real time. Recursive inotify watchers (Linux) cannot watch a directory before it exists, so a file written into a directory in
+ * the first moments after the directory was created can be missed entirely; macOS (FSEvents) and Windows do not have that gap.
+ * A later write is a change event that the now-live watch does see. `files` maps absolute paths to the content to write.
+ */
+export async function waitUntilSeen(
+  api: ChangescopeApi,
+  files: Record<string, string>,
+  isSeen: (path: string) => boolean,
+  what: string,
+  timeoutMs = 60_000,
+): Promise<void> {
+  let nextRewrite = Date.now() + 750;
+  try {
+    await waitUntil(
+      api,
+      () => {
+        const unseen = Object.keys(files).filter((p) => !isSeen(p));
+        if (unseen.length === 0) return true;
+        if (Date.now() >= nextRewrite) {
+          nextRewrite = Date.now() + 750;
+          for (const p of unseen) writeFileSync(p, files[p] as string);
+        }
+        return false;
+      },
+      what,
+      timeoutMs,
+    );
+  } catch (e) {
+    const unseen = Object.keys(files).filter((p) => !isSeen(p));
+    throw new Error(`${e instanceof Error ? e.message : String(e)} (never seen: ${unseen.map((p) => basename(p)).join(', ') || 'none'})`, { cause: e });
+  }
 }
 
 /** Real-time wait (system clock, no seam): polls `cond` every 25 ms until it holds or `timeoutMs` passes. */
