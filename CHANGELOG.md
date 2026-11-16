@@ -21,8 +21,8 @@ An activity dashboard, an activity history, and a foundation for dependency and 
 
 **Changed**
 
-- **File Shake is now Changescope.** The name now says what the extension does: show what changed in your workspace, who or what changed it, and what it affects. The display name, extension id, command ids, setting keys, view ids and colour ids all changed from the `fileShake.` prefix to `changescope.`. Behaviour is unchanged, but anything you configured under `fileShake.` (settings, keybindings, colour customisations) has to be set again under `changescope.`. The GitHub repository keeps its current name for now.
-- `package.json` repository URL is now `https://github.com/AblorhSowah/file-shake.git`, and `npm run package` no longer needs `--allow-missing-repository`. The publisher is still a placeholder until a Marketplace publisher id is chosen.
+- **File Shake is now Changescope.** The name now says what the extension does: show what changed in your workspace, who or what changed it, and what it affects. The display name, extension id, command ids, setting keys, view ids and colour ids all changed from the `fileShake.` prefix to `changescope.`. Behaviour is unchanged, but anything you configured under `fileShake.` (settings, keybindings, colour customisations) has to be set again under `changescope.`. The GitHub repository is now named Changescope as well.
+- `package.json` repository URL is now `https://github.com/AblorhSowah/Changescope.git`, and `npm run package` no longer needs `--allow-missing-repository`. The publisher is still a placeholder until a Marketplace publisher id is chosen.
 - GitHub Actions workflows for CI (build, lint, unit tests on Linux, macOS and Windows; integration tests on Linux) and for building a release `.vsix`.
 
 **Fixed before release (found by testing)**
